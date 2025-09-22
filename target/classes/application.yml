@@ -1,0 +1,50 @@
+server:
+  port: 8080
+
+spring:
+  profiles:
+    active: dev
+  main:
+    allow-circular-references: true
+  datasource:
+    driver-class-name: ${ita.datasource.driver-class-name}
+    url: jdbc:mysql://${ita.datasource.host}:${ita.datasource.port}/${ita.datasource.database}?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${ita.datasource.username}
+    password: ${ita.datasource.password}
+  transaction:
+    default-timeout: 30
+  jpa:
+    open-in-view: false
+
+
+# MyBatis Plus 配置
+mybatis-plus:
+  # 实体类包路径
+  type-aliases-package: com.ita.home.model.entity
+  configuration:
+    # 开启驼峰命名转换
+    map-underscore-to-camel-case: true
+    # 打印SQL日志
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      # 主键类型：AUTO自增
+      id-type: auto
+
+logging:
+  level:
+    com:
+      ita:
+        home:
+          mapper: debug
+          service: info
+          controller: info
+
+# Swagger文档配置
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
