@@ -40,6 +40,17 @@ logging:
           service: info
           controller: info
 
+# JWT配置
+jwt:
+  # JWT密钥，生产环境请使用更复杂的密钥
+  secret: itaHomeJwtSecretKey2025
+  # token过期时间，单位：小时
+  expire-hours: 24
+  # token前缀
+  token-prefix: "Bearer "
+  # header名称
+  header-name: "Authorization"
+
 # Swagger文档配置
 springdoc:
   api-docs:

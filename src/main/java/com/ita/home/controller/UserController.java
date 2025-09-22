@@ -1,23 +1,24 @@
 package com.ita.home.controller;
 
+import com.ita.home.annotation.RequireAuth;
 import com.ita.home.model.entity.User;
 import com.ita.home.model.req.LoginRequest;
 import com.ita.home.model.req.RegisterRequest;
 import com.ita.home.result.Result;
 import com.ita.home.service.UserService;
+import com.ita.home.utils.JwtUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.extern.log4j.Log4j;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Logger;
 
 /**
  * 用户控制器
@@ -31,6 +32,9 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     /**
      * 用户注册接口
@@ -78,47 +82,60 @@ public class UserController {
      * 用户登录接口
      * POST /api/user/login
      */
-    @Operation(summary = "用户登录", description = "验证用户名和密码，返回用户信息")
+    @Operation(summary = "用户登录", description = "验证用户名和密码，返回JWT令牌和用户信息")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "登录成功"),
+            @ApiResponse(responseCode = "200", description = "登录成功，返回JWT令牌"),
             @ApiResponse(responseCode = "400", description = "用户名或密码错误")
     })
     @PostMapping("/login")
     public Result<Map<String, Object>> login(@RequestBody LoginRequest loginRequest) {
         try {
-            // 执行登录
+            // 执行登录验证
             User user = userService.login(loginRequest);
             if (user == null) {
-                log.error("用户名或密码错误");
+                log.warn("登录失败，用户名或密码错误: {}", loginRequest.getName());
                 return Result.error("用户名或密码错误");
             }
 
+            // 生成JWT令牌
+            String token = jwtUtil.generateToken(user.getId(), user.getName());
+
             // 构建返回数据
             Map<String, Object> data = new HashMap<>();
-            data.put("id", user.getId());
-            data.put("name", user.getName());
-            data.put("avatar", user.getAvatar());
-            data.put("createTime", user.getCreateTime());
+            data.put("token", token);                    // JWT令牌
+            data.put("tokenType", "Bearer");             // 令牌类型
+            data.put("expiresIn", jwtUtil.getExpireHours() * 3600); // 过期时间（秒）
+            
+            // 用户信息
+            Map<String, Object> userInfo = new HashMap<>();
+            userInfo.put("id", user.getId());
+            userInfo.put("name", user.getName());
+            userInfo.put("avatar", user.getAvatar());
+            userInfo.put("createTime", user.getCreateTime());
+            data.put("user", userInfo);
 
+            log.info("用户登录成功: {} (ID: {})", user.getName(), user.getId());
             return Result.success(data);
 
         } catch (NullPointerException e) {
-            log.error(e.getMessage());
+            log.error("登录请求参数为空: {}", e.getMessage());
             return Result.error("用户名和密码不能为空");
         } catch (Exception e) {
-            log.error(e.getMessage());
+            log.error("登录过程中发生异常", e);
             return Result.error("系统异常，请联系管理员");
         }
     }
 
     /**
-     * 根据用户ID查询用户信息
+     * 根据用户ID查询用户信息（需要登录）
      * GET /api/user/{id}
      */
-    @Operation(summary = "查询用户信息", description = "根据用户ID获取用户详细信息")
+    @RequireAuth
+    @Operation(summary = "查询用户信息", description = "根据用户ID获取用户详细信息（需要JWT认证）")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "查询成功"),
-            @ApiResponse(responseCode = "400", description = "用户不存在")
+            @ApiResponse(responseCode = "400", description = "用户不存在"),
+            @ApiResponse(responseCode = "401", description = "未授权，请先登录")
     })
     @GetMapping("/{id}")
     public Result<User> getUserById(
@@ -139,7 +156,7 @@ public class UserController {
             return Result.success(user);
 
         } catch (Exception e) {
-            log.error(e.getMessage());
+            log.error("查询用户信息失败", e);
             return Result.error("系统异常，请联系管理员");
         }
     }
@@ -166,7 +183,185 @@ public class UserController {
             return Result.success(exist);
 
         } catch (Exception e) {
-            log.error(e.getMessage());
+            log.error("检查用户名是否存在失败", e);
+            return Result.error("系统异常，请联系管理员");
+        }
+    }
+
+    /**
+     * 获取当前登录用户信息
+     * GET /api/user/profile
+     */
+    @RequireAuth
+    @Operation(summary = "获取个人信息", description = "获取当前登录用户的详细信息")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "获取成功"),
+            @ApiResponse(responseCode = "401", description = "未授权，请先登录")
+    })
+    @GetMapping("/profile")
+    public Result<Map<String, Object>> getCurrentUserProfile(HttpServletRequest request) {
+        try {
+            // 从请求属性中获取当前用户信息（由JWT过滤器设置）
+            Long currentUserId = (Long) request.getAttribute("currentUserId");
+            String currentUsername = (String) request.getAttribute("currentUsername");
+            
+            if (currentUserId == null) {
+                return Result.error("获取用户信息失败");
+            }
+
+            // 查询用户详细信息
+            User user = userService.findById(currentUserId);
+            if (user == null) {
+                return Result.error("用户不存在");
+            }
+
+            // 构建返回数据
+            Map<String, Object> profile = new HashMap<>();
+            profile.put("id", user.getId());
+            profile.put("name", user.getName());
+            profile.put("avatar", user.getAvatar());
+            profile.put("createTime", user.getCreateTime());
+            profile.put("updateTime", user.getUpdateTime());
+
+            return Result.success(profile);
+
+        } catch (Exception e) {
+            log.error("获取用户个人信息失败", e);
+            return Result.error("系统异常，请联系管理员");
+        }
+    }
+
+    /**
+     * 修改用户头像
+     * PUT /api/user/avatar
+     */
+    @RequireAuth
+    @Operation(summary = "修改头像", description = "修改当前登录用户的头像")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "修改成功"),
+            @ApiResponse(responseCode = "400", description = "头像编号无效"),
+            @ApiResponse(responseCode = "401", description = "未授权，请先登录")
+    })
+    @PutMapping("/avatar")
+    public Result<String> updateAvatar(
+            @Parameter(description = "头像编号（1-9）", required = true)
+            @RequestParam Integer avatar,
+            HttpServletRequest request) {
+        try {
+            // 参数验证
+            if (avatar == null || avatar < 1 || avatar > 9) {
+                return Result.error("头像编号必须在1-9之间");
+            }
+
+            // 获取当前用户ID
+            Long currentUserId = (Long) request.getAttribute("currentUserId");
+            if (currentUserId == null) {
+                return Result.error("获取用户信息失败");
+            }
+
+            // 更新头像
+            boolean success = userService.updateUserAvatar(currentUserId, avatar);
+            if (success) {
+                log.info("用户 {} 修改头像成功，新头像: {}", currentUserId, avatar);
+                return Result.success("头像修改成功");
+            } else {
+                return Result.error("头像修改失败");
+            }
+
+        } catch (Exception e) {
+            log.error("修改用户头像失败", e);
+            return Result.error("系统异常，请联系管理员");
+        }
+    }
+
+    /**
+     * 修改密码
+     * PUT /api/user/password
+     */
+    @RequireAuth
+    @Operation(summary = "修改密码", description = "修改当前登录用户的密码")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "修改成功"),
+            @ApiResponse(responseCode = "400", description = "原密码错误或新密码格式不正确"),
+            @ApiResponse(responseCode = "401", description = "未授权，请先登录")
+    })
+    @PutMapping("/password")
+    public Result<String> updatePassword(
+            @RequestBody Map<String, String> passwordData,
+            HttpServletRequest request) {
+        try {
+            String oldPassword = passwordData.get("oldPassword");
+            String newPassword = passwordData.get("newPassword");
+            String confirmPassword = passwordData.get("confirmPassword");
+
+            // 参数验证
+            if (oldPassword == null || oldPassword.trim().isEmpty()) {
+                return Result.error("原密码不能为空");
+            }
+            if (newPassword == null || newPassword.length() < 6 || newPassword.length() > 20) {
+                return Result.error("新密码长度必须在6-20字符之间");
+            }
+            if (!newPassword.equals(confirmPassword)) {
+                return Result.error("两次输入的新密码不一致");
+            }
+
+            // 获取当前用户ID
+            Long currentUserId = (Long) request.getAttribute("currentUserId");
+            if (currentUserId == null) {
+                return Result.error("获取用户信息失败");
+            }
+
+            // 更新密码
+            boolean success = userService.updateUserPassword(currentUserId, oldPassword, newPassword);
+            if (success) {
+                log.info("用户 {} 修改密码成功", currentUserId);
+                return Result.success("密码修改成功");
+            } else {
+                return Result.error("原密码错误");
+            }
+
+        } catch (Exception e) {
+            log.error("修改用户密码失败", e);
+            return Result.error("系统异常，请联系管理员");
+        }
+    }
+
+    /**
+     * 用户统计信息（可选登录）
+     * GET /api/user/stats
+     */
+    @RequireAuth(required = false)
+    @Operation(summary = "用户统计", description = "获取用户统计信息，登录后可获得更详细信息")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "获取成功")
+    })
+    @GetMapping("/stats")
+    public Result<Map<String, Object>> getUserStats(HttpServletRequest request) {
+        try {
+            // 检查是否已登录
+            Long currentUserId = (Long) request.getAttribute("currentUserId");
+            String currentUsername = (String) request.getAttribute("currentUsername");
+            
+            Map<String, Object> stats = new HashMap<>();
+            
+            if (currentUserId != null) {
+                // 已登录用户，返回详细统计
+                stats.put("isLoggedIn", true);
+                stats.put("currentUser", currentUsername);
+                stats.put("userId", currentUserId);
+                stats.put("totalUsers", userService.getTotalUserCount());
+                stats.put("message", "欢迎回来，" + currentUsername + "！");
+            } else {
+                // 未登录用户，返回基础统计
+                stats.put("isLoggedIn", false);
+                stats.put("totalUsers", userService.getTotalUserCount());
+                stats.put("message", "欢迎访问ITA Home系统");
+            }
+            
+            return Result.success(stats);
+
+        } catch (Exception e) {
+            log.error("获取用户统计信息失败", e);
             return Result.error("系统异常，请联系管理员");
         }
     }

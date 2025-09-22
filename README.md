@@ -1,6 +1,6 @@
 # 🏠 ITA Home
 
-基于 Spring Boot + MyBatis Plus 构建的用户注册登录系统，集成 Swagger API 文档。
+基于 Spring Boot + MyBatis Plus 构建的用户管理系统，集成 JWT 身份认证和 Swagger API 文档。
 
 ## 📁 项目结构
 
@@ -61,6 +61,7 @@ ITAHome/backend/home/
 | MySQL | 8.0+ | 关系型数据库 |
 | Druid | 1.2.16 | 数据库连接池 |
 | Swagger 3 | 2.2.0 | API 文档生成工具 |
+| JWT | 0.11.5 | JSON Web Token，用于身份认证 |
 | Lombok | - | 简化 Java 代码 |
 | BCrypt | - | 密码加密 |
 
@@ -125,12 +126,16 @@ java -jar target/home-0.0.1-SNAPSHOT.jar
 
 ### API 接口概览
 
-| 接口路径 | 方法 | 功能描述 |
-|---------|------|---------|
-| `/api/user/register` | POST | 用户注册 |
-| `/api/user/login` | POST | 用户登录 |
-| `/api/user/{id}` | GET | 查询用户信息 |
-| `/api/user/check/{name}` | GET | 检查用户名是否存在 |
+| 接口路径 | 方法 | 功能描述 | 需要认证 |
+|---------|------|---------|----------|
+| `/api/user/register` | POST | 用户注册 | ❌ |
+| `/api/user/login` | POST | 用户登录，返回JWT令牌 | ❌ |
+| `/api/user/check/{name}` | GET | 检查用户名是否存在 | ❌ |
+| `/api/user/{id}` | GET | 查询用户信息 | ✅ JWT |
+| `/api/user/profile` | GET | 获取当前用户信息 | ✅ JWT |
+| `/api/user/avatar` | PUT | 修改用户头像 | ✅ JWT |
+| `/api/user/password` | PUT | 修改用户密码 | ✅ JWT |
+| `/api/user/stats` | GET | 用户统计信息 | 🔄 可选 |
 
 ## 🧪 测试数据
 
@@ -157,7 +162,7 @@ curl -X POST http://localhost:8080/api/user/register \
   }'
 ```
 
-### 2. 用户登录
+### 2. 用户登录（获取JWT令牌）
 
 ```bash
 curl -X POST http://localhost:8080/api/user/login \
@@ -165,6 +170,47 @@ curl -X POST http://localhost:8080/api/user/login \
   -d '{
     "name": "admin",
     "password": "123456"
+  }'
+```
+
+**登录成功响应示例：**
+```json
+{
+  "code": 1,
+  "msg": null,
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOjEsInVzZXJuYW1lIjoiYWRtaW4iLCJ0aW1lc3RhbXAiOjE2OTU0NzIyMDAwMDAsInN1YiI6ImFkbWluIiwiaWF0IjoxNjk1NDcyMjAwLCJleHAiOjE2OTU1NTg2MDB9.xxx",
+    "tokenType": "Bearer",
+    "expiresIn": 86400,
+    "user": {
+      "id": 1,
+      "name": "admin",
+      "avatar": 1,
+      "createTime": "2025-09-22T15:30:00"
+    }
+  }
+}
+```
+
+### 3. 使用JWT令牌访问受保护接口
+
+```bash
+# 获取个人信息
+curl -X GET http://localhost:8080/api/user/profile \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
+
+# 修改头像
+curl -X PUT "http://localhost:8080/api/user/avatar?avatar=5" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
+
+# 修改密码
+curl -X PUT http://localhost:8080/api/user/password \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -d '{
+    "oldPassword": "123456",
+    "newPassword": "newpassword",
+    "confirmPassword": "newpassword"
   }'
 ```
 
@@ -246,7 +292,44 @@ server:
 
 **解决**：确保项目启动成功，访问 http://localhost:8080/swagger-ui.html
 
+## 🔐 JWT 身份认证
+
+### JWT 配置说明
+
+系统使用JWT（JSON Web Token）进行用户身份认证：
+
+- **令牌有效期**：24小时
+- **认证方式**：请求头携带 `Authorization: Bearer <token>`
+- **自动过期**：令牌过期后需要重新登录
+
+### 认证流程
+
+1. **用户登录** → 获得JWT令牌
+2. **携带令牌** → 在请求头中添加 `Authorization: Bearer <token>`
+3. **访问受保护接口** → 系统自动验证令牌有效性
+4. **令牌过期** → 返回401错误，需要重新登录
+
+### 认证注解
+
+- `@RequireAuth` - 必须登录才能访问
+- `@RequireAuth(required = false)` - 可选登录，登录后获得更多信息
+
+### Swagger中测试JWT
+
+1. 登录获得token
+2. 点击Swagger右上角的🔒图标
+3. 输入：`Bearer <your_token>`
+4. 点击"Authorize"按钮
+5. 现在可以测试需要认证的接口
+
 ## 📝 更新日志
+
+### v2.0.0 (2025-09-22)
+- ✅ **JWT身份认证系统**
+- ✅ 用户个人信息管理
+- ✅ 头像和密码修改功能
+- ✅ 可选登录接口支持
+- ✅ 完善的异常处理和日志
 
 ### v1.0.0 (2025-09-22)
 - ✅ 基础用户注册登录功能
