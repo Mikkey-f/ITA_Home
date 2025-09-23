@@ -1,13 +1,17 @@
 package com.ita.home.controller;
 
 import com.ita.home.annotation.RequireAuth;
+import com.ita.home.constant.EmailConstant;
 import com.ita.home.model.entity.User;
+import com.ita.home.model.event.EmailEvent;
 import com.ita.home.model.req.LoginByNameRequest;
 import com.ita.home.model.req.RegisterRequest;
 import com.ita.home.model.req.UpdatePasswordRequest;
+import com.ita.home.producer.EmailProducer;
 import com.ita.home.result.Result;
 import com.ita.home.service.UserService;
 import com.ita.home.utils.JwtUtil;
+import com.ita.home.utils.ValidateUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -16,6 +20,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -28,14 +36,28 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/user")
 @Slf4j
+@EnableCaching
 @Tag(name = "用户管理", description = "用户注册、登录、信息查询等接口")
 public class UserController {
 
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
+    private final JwtUtil jwtUtil;
+    private final ValidateUtil validateUtil;
+    private final EmailProducer emailProducer;
+    private final Cache verifyCodeCache;
 
     @Autowired
-    private JwtUtil jwtUtil;
+    public UserController(@Qualifier("verifyCodeCacheManager") CacheManager cacheManager,
+                          UserService userService,
+                          JwtUtil jwtUtil,
+                          ValidateUtil validateUtil,
+                          EmailProducer emailProducer) {
+        this.verifyCodeCache = cacheManager.getCache("verifyCodeCache");
+        this.userService = userService;
+        this.jwtUtil = jwtUtil;
+        this.validateUtil = validateUtil;
+        this.emailProducer = emailProducer;
+    }
 
     /**
      * 用户注册接口
@@ -58,6 +80,10 @@ public class UserController {
                 return Result.error("密码长度必须在6-20字符之间");
             }
 
+            if (registerRequest.getCode().length() != 4) {
+                return Result.error("验证码长度不为4");
+            }
+
             // 检查用户名是否已存在
             if (userService.isNameExist(registerRequest.getName())) {
                 return Result.error("用户名已存在，请换一个试试");
@@ -68,6 +94,15 @@ public class UserController {
                 return Result.error("邮箱已存在，请换一个试试");
             }
 
+            Integer cacheCode = verifyCodeCache.get(registerRequest.getEmail(), Integer.class);
+            if (cacheCode == null) {
+                return Result.error("验证码已经过期");
+            }
+            // 获取请求中的验证码
+            Integer code = Integer.valueOf(registerRequest.getCode());
+            if (!cacheCode.equals(code)) {
+                return Result.error("验证码错误");
+            }
             // 执行注册
             boolean success = userService.register(registerRequest);
             return success ? Result.success("注册成功！") : Result.error("注册失败，请稍后重试");
@@ -328,5 +363,44 @@ public class UserController {
         }
     }
 
-
+    /**
+     * 邮箱激活
+     * POST /api/user/activate
+     */
+    @Operation(summary = "邮箱验证", description = "给目标邮箱发送验证码")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "发送成功"),
+            @ApiResponse(responseCode = "400", description = "发送失败"),
+    })
+    @PutMapping("/activate")
+    public Result<String> getActivateCode(
+            String email) {
+        try {
+            //1 获取验证码并缓存
+            Integer code = validateUtil.generateValidateCode(4);
+            verifyCodeCache.put(email, code);
+            log.info("验证码存储成功：邮箱={}, 验证码={}", email, code);
+            //2 获取验证码内容
+            String emailContent = java.text.MessageFormat.format(
+                    EmailConstant.EMAIL_CODE_TEMPLATE,
+                    code,
+                    EmailConstant.validTimeTip,
+                    EmailConstant.securityTip
+            );
+            //3 生成事件
+            EmailEvent emailEvent = EmailEvent.builder()
+                    .content(emailContent)
+                    .subject(EmailConstant.EMAIL_SUBJECT)
+                    .toEmail(email)
+                    .build();
+            //4 发送事件
+            if (emailProducer.sendEmailEvent(emailEvent)) {
+                return Result.success("获取验证码成功");
+            }
+            return Result.error("获取验证码失败");
+        } catch (Exception e) {
+            log.error("验证码发送失败", e);
+            return Result.error("系统异常，请联系管理员");
+        }
+    }
 }

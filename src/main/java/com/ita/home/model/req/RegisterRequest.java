@@ -24,10 +24,15 @@ public class RegisterRequest {
     @Schema(description = "密码", example = "123456", required = true, minLength = 6, maxLength = 20)
     private String password;
 
-    /** 密码 - 必填 */
+    /** 邮箱 - 必填 */
     @NonNull
     @Schema(description = "邮箱", example = "1234@qq.com", required = true)
     private String email;
+
+    /** 验证码 - 必填 */
+    @NonNull
+    @Schema(description = "验证码", example = "1234", required = true)
+    private String code;
 
 
     /**

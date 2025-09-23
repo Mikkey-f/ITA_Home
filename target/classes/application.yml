@@ -15,6 +15,18 @@ spring:
     default-timeout: 30
   jpa:
     open-in-view: false
+  mail:
+    host: ${ita.mail.host}
+    port: ${ita.mail.port}
+    username: ${ita.mail.username}
+    password: ${ita.mail.password}
+    protocol: ${ita.mail.protocol}
+    properties:
+      mail:
+        smtp:
+          ssl:
+            enable: ${ita.mail.properties.mail.smtp.ssl.enable}
+
 
 
 # MyBatis Plus 配置
@@ -43,7 +55,7 @@ logging:
 # JWT配置
 jwt:
   # JWT密钥，生产环境请使用更复杂的密钥
-  secret: aXRhSG9tZUp3dFNlY3JldEtleTIwMjV8MTIzNDU2Nzg5MDEyMzQ1Njc4OTA=
+  secret: ${jwt.secret}
   # token过期时间，单位：小时
   expire-hours: 24
   # token前缀
@@ -59,3 +71,4 @@ springdoc:
     path: /swagger-ui.html
     tags-sorter: alpha
     operations-sorter: alpha
+

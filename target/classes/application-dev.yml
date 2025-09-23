@@ -9,3 +9,16 @@ ita:
     database: ita_home
     username: root
     password: 123456
+  mail:
+    host: smtp.sina.com
+    port: 465
+    username: mikkeych@sina.com
+    password: b4cb7f4a169ce4d4
+    protocol: smtp
+    properties:
+      mail:
+        smtp:
+          ssl:
+            enable: true
+jwt:
+  secret: aXRhSG9tZUp3dFNlY3JldEtleTIwMjV8MTIzNDU2Nzg5MDEyMzQ1Njc4OTA
