@@ -4,6 +4,7 @@ import com.ita.home.annotation.RequireAuth;
 import com.ita.home.model.entity.User;
 import com.ita.home.model.req.LoginByNameRequest;
 import com.ita.home.model.req.RegisterRequest;
+import com.ita.home.model.req.UpdatePasswordRequest;
 import com.ita.home.result.Result;
 import com.ita.home.service.UserService;
 import com.ita.home.utils.JwtUtil;
@@ -288,18 +289,18 @@ public class UserController {
     })
     @PutMapping("/password")
     public Result<String> updatePassword(
-            @RequestBody Map<String, String> passwordData,
+            @RequestBody UpdatePasswordRequest updatePasswordRequest,
             HttpServletRequest request) {
         try {
-            String oldPassword = passwordData.get("oldPassword");
-            String newPassword = passwordData.get("newPassword");
-            String confirmPassword = passwordData.get("confirmPassword");
+            String oldPassword = updatePasswordRequest.getOldPassword();
+            String newPassword = updatePasswordRequest.getNewPassword();
+            String confirmPassword = updatePasswordRequest.getConfirmPassword();
 
             // 参数验证
-            if (oldPassword == null || oldPassword.trim().isEmpty()) {
+            if (oldPassword.trim().isEmpty()) {
                 return Result.error("原密码不能为空");
             }
-            if (newPassword == null || newPassword.length() < 6 || newPassword.length() > 20) {
+            if (newPassword.length() < 6 || newPassword.length() > 20) {
                 return Result.error("新密码长度必须在6-20字符之间");
             }
             if (!newPassword.equals(confirmPassword)) {

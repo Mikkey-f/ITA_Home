@@ -40,7 +40,7 @@ public class User {
     /** 邮箱 - 唯一，不可重复 */
     @NonNull
     @Schema(description = "邮箱", hidden = true)
-    private String email;
+    private String mail;
 
     /** 分组id - 1-3 */
     @Schema(description = "分组id1", hidden = true)

@@ -20,11 +20,17 @@ import java.util.concurrent.ThreadLocalRandom;
 @Service
 public class UserServiceImpl implements UserService {
 
-    @Autowired
-    private UserMapper userMapper;
-
     // 密码加密工具
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final UserMapper userMapper;
+
+
+    @Autowired
+    public UserServiceImpl(UserMapper userMapper) {
+        this.userMapper = userMapper;
+    }
+
+
 
     /**
      * 用户注册
@@ -36,7 +42,7 @@ public class UserServiceImpl implements UserService {
                 .name(registerRequest.getName())
                 .password(passwordEncoder.encode(registerRequest.getPassword())) // 密码加密
                 .avatar(ThreadLocalRandom.current().nextInt(1, 10))
-                .email(registerRequest.getEmail())
+                .mail(registerRequest.getEmail())
                 .build();
 
         int result = userMapper.insert(user);
