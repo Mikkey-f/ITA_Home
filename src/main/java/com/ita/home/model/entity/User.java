@@ -36,6 +36,15 @@ public class User {
     @JsonIgnore // 在JSON序列化时忽略此字段
     @Schema(description = "密码（加密存储）", hidden = true)
     private String password;
+
+    /** 邮箱 - 唯一，不可重复 */
+    @NonNull
+    @Schema(description = "邮箱", hidden = true)
+    private String email;
+
+    /** 分组id - 1-3 */
+    @Schema(description = "分组id1", hidden = true)
+    private Integer groupId;
     
     /** 头像编号 - 1到9，对应9张不同的头像 */
     @Builder.Default

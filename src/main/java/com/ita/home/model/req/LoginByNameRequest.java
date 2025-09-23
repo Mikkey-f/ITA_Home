@@ -1,22 +1,24 @@
 package com.ita.home.model.req;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
 
 /**
- * 注册请求实体
- * 用户注册时传递的参数
+ * 登录请求实体
+ * 用户登录时传递的参数
  */
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-@Schema(description = "用户注册请求")
-public class RegisterRequest {
+@Data // 生成getter/setter/equals/hashCode
+@NoArgsConstructor // 无参构造器
+@AllArgsConstructor // 全参构造器
+@Schema(description = "用户使用用户名登录请求")
+public class LoginByNameRequest {
     
     /** 用户名 - 必填 */
     @NonNull
-    @Schema(description = "用户名", example = "newuser", required = true, minLength = 3, maxLength = 20)
+    @Schema(description = "用户名", example = "admin", required = true, minLength = 3, maxLength = 20)
     private String name;
     
     /** 密码 - 必填 */
@@ -24,21 +26,14 @@ public class RegisterRequest {
     @Schema(description = "密码", example = "123456", required = true, minLength = 6, maxLength = 20)
     private String password;
 
-    /** 密码 - 必填 */
-    @NonNull
-    @Schema(description = "邮箱", example = "1234@qq.com", required = true)
-    private String email;
-
-
     /**
      * 重写toString方法 - 不显示密码信息，保证安全
      */
     @Override
     public String toString() {
-        return "RegisterRequest{" +
+        return "LoginRequest{" +
                 "name='" + name + '\'' +
                 ", password='***'" + // 不打印真实密码
-                ", email='" + email + '\'' +
                 '}';
     }
 }

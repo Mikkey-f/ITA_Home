@@ -23,6 +23,16 @@ public interface UserMapper extends BaseMapper<User> {
     User findByName(String name);
 
     /**
+     * 根据邮箱查找用户
+     * 用于登录验证和检查用户名是否存在
+     *
+     * @param email 邮箱
+     * @return 用户对象，如果不存在返回null
+     */
+    @Select("SELECT * FROM ita_home.user WHERE mail = #{email}")
+    User findByEmail(String email);
+
+    /**
      * 检查用户名是否存在
      * 用于注册时验证用户名是否重复
      * 
@@ -31,4 +41,15 @@ public interface UserMapper extends BaseMapper<User> {
      */
     @Select("SELECT COUNT(*) > 0 FROM ita_home.user WHERE name = #{name}")
     boolean existsByName(String name);
+
+
+    /**
+     * 检查用户名是否存在
+     * 用于注册时验证用户名是否重复
+     *
+     * @param email 邮箱
+     * @return 存在返回true，不存在返回false
+     */
+    @Select("SELECT COUNT(*) > 0 FROM ita_home.user WHERE mail = #{email}")
+    boolean existsByEmail(String email);
 }

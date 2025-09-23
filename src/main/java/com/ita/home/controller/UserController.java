@@ -2,7 +2,7 @@ package com.ita.home.controller;
 
 import com.ita.home.annotation.RequireAuth;
 import com.ita.home.model.entity.User;
-import com.ita.home.model.req.LoginRequest;
+import com.ita.home.model.req.LoginByNameRequest;
 import com.ita.home.model.req.RegisterRequest;
 import com.ita.home.result.Result;
 import com.ita.home.service.UserService;
@@ -57,13 +57,14 @@ public class UserController {
                 return Result.error("密码长度必须在6-20字符之间");
             }
 
-            if (!registerRequest.getPassword().equals(registerRequest.getConfirmPassword())) {
-                return Result.error("两次输入的密码不一致");
-            }
-
             // 检查用户名是否已存在
             if (userService.isNameExist(registerRequest.getName())) {
                 return Result.error("用户名已存在，请换一个试试");
+            }
+
+            // 检查邮箱是否已存在
+            if (userService.isEmailExist(registerRequest.getEmail())) {
+                return Result.error("邮箱已存在，请换一个试试");
             }
 
             // 执行注册
@@ -82,16 +83,16 @@ public class UserController {
      * 用户登录接口
      * POST /api/user/login
      */
-    @Operation(summary = "用户登录", description = "验证用户名和密码，返回JWT令牌和用户信息")
+    @Operation(summary = "用户使用用户名登录", description = "验证用户名和密码，返回JWT令牌和用户信息")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "登录成功，返回JWT令牌"),
             @ApiResponse(responseCode = "400", description = "用户名或密码错误")
     })
-    @PostMapping("/login")
-    public Result<Map<String, Object>> login(@RequestBody LoginRequest loginRequest) {
+    @PostMapping("/login/name")
+    public Result<Map<String, Object>> login(@RequestBody LoginByNameRequest loginRequest) {
         try {
             // 执行登录验证
-            User user = userService.login(loginRequest);
+            User user = userService.loginByName(loginRequest);
             if (user == null) {
                 log.warn("登录失败，用户名或密码错误: {}", loginRequest.getName());
                 return Result.error("用户名或密码错误");
@@ -152,7 +153,7 @@ public class UserController {
             }
 
             // 清除密码信息
-            user.setPassword(null);
+            user.setPassword("xxxx");
             return Result.success(user);
 
         } catch (Exception e) {
@@ -326,43 +327,5 @@ public class UserController {
         }
     }
 
-    /**
-     * 用户统计信息（可选登录）
-     * GET /api/user/stats
-     */
-    @RequireAuth(required = false)
-    @Operation(summary = "用户统计", description = "获取用户统计信息，登录后可获得更详细信息")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "获取成功")
-    })
-    @GetMapping("/stats")
-    public Result<Map<String, Object>> getUserStats(HttpServletRequest request) {
-        try {
-            // 检查是否已登录
-            Long currentUserId = (Long) request.getAttribute("currentUserId");
-            String currentUsername = (String) request.getAttribute("currentUsername");
-            
-            Map<String, Object> stats = new HashMap<>();
-            
-            if (currentUserId != null) {
-                // 已登录用户，返回详细统计
-                stats.put("isLoggedIn", true);
-                stats.put("currentUser", currentUsername);
-                stats.put("userId", currentUserId);
-                stats.put("totalUsers", userService.getTotalUserCount());
-                stats.put("message", "欢迎回来，" + currentUsername + "！");
-            } else {
-                // 未登录用户，返回基础统计
-                stats.put("isLoggedIn", false);
-                stats.put("totalUsers", userService.getTotalUserCount());
-                stats.put("message", "欢迎访问ITA Home系统");
-            }
-            
-            return Result.success(stats);
 
-        } catch (Exception e) {
-            log.error("获取用户统计信息失败", e);
-            return Result.error("系统异常，请联系管理员");
-        }
-    }
 }

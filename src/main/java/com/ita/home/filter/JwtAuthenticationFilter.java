@@ -8,6 +8,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -25,25 +26,27 @@ import java.lang.reflect.Method;
  * 检查标注了@RequireAuth注解的接口，验证请求头中的JWT令牌
  * 如果验证失败，返回401错误；如果验证成功，将用户信息存储到请求属性中
  * 
- * @author ITA Team
+ * @author Mikkeyf
  * @since 2025-09-22
  */
 @Slf4j
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    @Autowired
-    private JwtUtil jwtUtil;
+    private final JwtUtil jwtUtil;
+    private final RequestMappingHandlerMapping handlerMapping;
+    private final ObjectMapper objectMapper;
 
     @Autowired
-    private RequestMappingHandlerMapping handlerMapping;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+    public JwtAuthenticationFilter(JwtUtil jwtUtil, RequestMappingHandlerMapping handlerMapping, ObjectMapper objectMapper) {
+        this.jwtUtil = jwtUtil;
+        this.handlerMapping = handlerMapping;
+        this.objectMapper = objectMapper;
+    }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, 
-                                  FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, @NonNull HttpServletResponse response,
+                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
         
         String requestURI = request.getRequestURI();
         String method = request.getMethod();
@@ -111,16 +114,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private RequireAuth getRequireAuthAnnotation(HttpServletRequest request) {
         try {
             HandlerExecutionChain handlerChain = handlerMapping.getHandler(request);
-            if (handlerChain != null && handlerChain.getHandler() instanceof HandlerMethod) {
-                HandlerMethod handlerMethod = (HandlerMethod) handlerChain.getHandler();
+            if (handlerChain != null && handlerChain.getHandler() instanceof HandlerMethod handlerMethod) {
                 Method method = handlerMethod.getMethod();
-                
                 // 先检查方法上的注解
                 RequireAuth methodAuth = method.getAnnotation(RequireAuth.class);
                 if (methodAuth != null) {
                     return methodAuth;
                 }
-                
                 // 再检查类上的注解
                 Class<?> handlerClass = handlerMethod.getBeanType();
                 return handlerClass.getAnnotation(RequireAuth.class);
