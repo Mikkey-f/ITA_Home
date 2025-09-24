@@ -15,8 +15,8 @@ import lombok.NoArgsConstructor;
 public class UpdateUserOjRequest {
 
     /** OJ平台类型 - 1:leetcode_cn, 2:luogu, 3:codeforces, 4:nowcoder */
-    @Schema(description = "OJ平台类型", example = "1", required = true)
-    private Integer platformType;
+    @Schema(description = "OJ平台类型", example = "luogu", required = true)
+    private String platformType;
 
     /** OJ平台用户名 */
     @Schema(description = "OJ平台类型需要的值", example = "user123")

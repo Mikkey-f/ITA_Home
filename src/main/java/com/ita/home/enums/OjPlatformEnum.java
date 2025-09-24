@@ -12,19 +12,19 @@ import lombok.Getter;
 public enum OjPlatformEnum {
     
     /** LeetCode中国站 */
-    LEETCODE_CN(1, "leetcode_cn", "LeetCode中国站"),
+    LEETCODE_CN("leetcode", "leetcode_cn", "LeetCode中国站"),
     
     /** 洛谷 */
-    LUOGU(2, "luogu", "洛谷"),
+    LUOGU("luogu", "luogu", "洛谷"),
     
     /** Codeforces */
-    CODEFORCES(3, "codeforces", "Codeforces"),
+    CODEFORCES("codeforces", "codeforces", "Codeforces"),
     
     /** 牛客网 */
-    NOWCODER(4, "nowcoder", "牛客网");
+    NOWCODER("nowcoder", "nowcoder", "牛客网");
     
     /** 平台ID */
-    private final Integer platformId;
+    private final String platformId;
     
     /** 平台代码（用于API调用） */
     private final String platformCode;
@@ -37,7 +37,7 @@ public enum OjPlatformEnum {
      * @param platformId 平台ID
      * @return OJ平台枚举
      */
-    public static OjPlatformEnum getByPlatformId(Integer platformId) {
+    public static OjPlatformEnum getByPlatformId(String platformId) {
         if (platformId == null) {
             return null;
         }

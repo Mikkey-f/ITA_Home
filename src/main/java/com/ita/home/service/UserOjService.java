@@ -2,6 +2,7 @@ package com.ita.home.service;
 
 import com.ita.home.model.dto.OjUserDataDto;
 import com.ita.home.model.entity.UserOj;
+import com.ita.home.model.vo.OjUserDataVo;
 
 import java.util.List;
 
@@ -25,5 +26,19 @@ public interface UserOjService {
      * @return 返回插入是否成功
      */
     boolean addUserOjAccountWithNull(Long userId);
+
+    /**
+     * 获取用户的userOj
+     * @param userId 用户id
+     * @return 返回userOj对象
+     */
+    UserOj getUserOjAccount(Long userId);
+
+    /**
+     * 获取用户各个平台的数据
+     * @param userId 用户id
+     * @return 返回ojUserDataVo对象
+     */
+    OjUserDataVo getOjUserDataVo(Long userId);
 
 }

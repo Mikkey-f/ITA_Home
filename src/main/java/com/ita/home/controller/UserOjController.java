@@ -3,11 +3,9 @@ package com.ita.home.controller;
 import com.ita.home.annotation.RequireAuth;
 import com.ita.home.enums.OjPlatformEnum;
 import com.ita.home.model.entity.UserOj;
-import com.ita.home.model.req.AddUserOjRequest;
 import com.ita.home.model.req.UpdateUserOjRequest;
 import com.ita.home.result.Result;
 import com.ita.home.service.UserOjService;
-import com.ita.home.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -56,7 +54,7 @@ public class UserOjController {
         }
 
         // 获取现有的OJ账号
-        UserOj userOj = userOjService.getUserOjAccount(currentUserId, request.getPlatformType());
+        UserOj userOj = userOjService.getUserOjAccount(currentUserId);
         if (userOj == null) {
             return Result.error("Oj表没有成功创建用户表项");
         }
@@ -64,13 +62,13 @@ public class UserOjController {
         // 更新字段
         switch (request.getPlatformType()) {
             // 力扣
-            case 1: userOj.setLeetcodeCnUsername(request.getValue()); break;
+            case "leetcode": userOj.setLeetcodeCnUsername(request.getValue()); break;
             // 洛谷
-            case 2: userOj.setLuoguUsername(request.getValue()); break;
+            case "luogu": userOj.setLuoguUsername(request.getValue()); break;
             // cf
-            case 3: userOj.setCodeforceUsername(request.getValue()); break;
+            case "codeforces": userOj.setCodeforceUsername(request.getValue()); break;
             // nowcoder
-            case 4: userOj.setNowcoderUserId(request.getValue()); break;
+            case "nowcoder": userOj.setNowcoderUserId(request.getValue()); break;
             default: return Result.error("没有该类型的oj平台");
         }
 

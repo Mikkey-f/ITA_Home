@@ -7,6 +7,7 @@ import com.ita.home.model.event.EmailEvent;
 import com.ita.home.model.req.LoginByNameRequest;
 import com.ita.home.model.req.RegisterRequest;
 import com.ita.home.model.req.UpdatePasswordRequest;
+import com.ita.home.model.vo.OjUserDataVo;
 import com.ita.home.producer.EmailProducer;
 import com.ita.home.result.Result;
 import com.ita.home.service.UserOjService;
@@ -46,6 +47,7 @@ public class UserController {
     private final ValidateUtil validateUtil;
     private final EmailProducer emailProducer;
     private final Cache verifyCodeCache;
+    private final UserOjService userOjService;
 
     @Autowired
     public UserController(@Qualifier("verifyCodeCacheManager") CacheManager cacheManager,
@@ -59,6 +61,7 @@ public class UserController {
         this.jwtUtil = jwtUtil;
         this.validateUtil = validateUtil;
         this.emailProducer = emailProducer;
+        this.userOjService = userOjService;
     }
 
     /**
@@ -243,7 +246,7 @@ public class UserController {
             // 从请求属性中获取当前用户信息（由JWT过滤器设置）
             Long currentUserId = (Long) request.getAttribute("currentUserId");
             String currentUsername = (String) request.getAttribute("currentUsername");
-            
+
             if (currentUserId == null) {
                 return Result.error("获取用户信息失败");
             }
@@ -254,6 +257,8 @@ public class UserController {
                 return Result.error("用户不存在");
             }
 
+            // 获取实时做题数据
+            OjUserDataVo ojUserDataVo = userOjService.getOjUserDataVo(currentUserId);
             // 构建返回数据
             Map<String, Object> profile = new HashMap<>();
             profile.put("id", user.getId());
@@ -261,6 +266,7 @@ public class UserController {
             profile.put("avatar", user.getAvatar());
             profile.put("createTime", user.getCreateTime());
             profile.put("updateTime", user.getUpdateTime());
+            profile.put("ojUserDataVo", ojUserDataVo);
 
             return Result.success(profile);
 
