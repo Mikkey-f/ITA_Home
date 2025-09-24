@@ -9,6 +9,7 @@ import com.ita.home.model.req.RegisterRequest;
 import com.ita.home.model.req.UpdatePasswordRequest;
 import com.ita.home.producer.EmailProducer;
 import com.ita.home.result.Result;
+import com.ita.home.service.UserOjService;
 import com.ita.home.service.UserService;
 import com.ita.home.utils.JwtUtil;
 import com.ita.home.utils.ValidateUtil;
@@ -51,7 +52,8 @@ public class UserController {
                           UserService userService,
                           JwtUtil jwtUtil,
                           ValidateUtil validateUtil,
-                          EmailProducer emailProducer) {
+                          EmailProducer emailProducer,
+                          UserOjService userOjService) {
         this.verifyCodeCache = cacheManager.getCache("verifyCodeCache");
         this.userService = userService;
         this.jwtUtil = jwtUtil;

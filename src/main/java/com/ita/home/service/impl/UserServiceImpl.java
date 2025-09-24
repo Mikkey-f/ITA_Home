@@ -5,7 +5,9 @@ import com.ita.home.model.entity.User;
 import com.ita.home.model.req.LoginByEmailRequest;
 import com.ita.home.model.req.LoginByNameRequest;
 import com.ita.home.model.req.RegisterRequest;
+import com.ita.home.service.UserOjService;
 import com.ita.home.service.UserService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -18,19 +20,13 @@ import java.util.concurrent.ThreadLocalRandom;
  * 实现用户相关的业务逻辑
  */
 @Service
+@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
     // 密码加密工具
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private final UserMapper userMapper;
-
-
-    @Autowired
-    public UserServiceImpl(UserMapper userMapper) {
-        this.userMapper = userMapper;
-    }
-
-
+    private final UserOjService userOjService;
 
     /**
      * 用户注册
@@ -46,7 +42,8 @@ public class UserServiceImpl implements UserService {
                 .build();
 
         int result = userMapper.insert(user);
-        return result > 0;
+        if (result <= 0) return false;
+        return userOjService.addUserOjAccountWithNull(user.getId());
     }
 
     /**

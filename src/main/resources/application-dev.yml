@@ -20,5 +20,7 @@ ita:
         smtp:
           ssl:
             enable: true
+  oj:
+    target: https://ojhunt.com/api/crawlers
 jwt:
   secret: aXRhSG9tZUp3dFNlY3JldEtleTIwMjV8MTIzNDU2Nzg5MDEyMzQ1Njc4OTA
