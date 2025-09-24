@@ -20,3 +20,21 @@ CREATE TABLE IF NOT EXISTS `user` (
     INDEX `idx_email` (`mail`),
     INDEX `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户信息表';
+
+-- 创建竞赛信息表
+CREATE TABLE IF NOT EXISTS `competition` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '竞赛ID，主键',
+    `title` VARCHAR(20) NOT NULL COMMENT '标题',
+    `content` TEXT NOT NULL COMMENT'内容',
+    `picture` VARCHAR(255) NOT NULL COMMENT '图片',
+    INDEX `idx_title` (`title`)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='竞赛信息表';
+
+-- 创建成员表
+CREATE TABLE IF NOT EXISTS `member` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '成员ID，主键',
+    `name` VARCHAR(50) NOT NULL COMMENT '成员名称',
+    `content` TEXT COMMENT '内容',
+    `picture` VARCHAR(255) COMMENT '图片',
+    INDEX `idx_name` (`name`)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='成员信息表';
