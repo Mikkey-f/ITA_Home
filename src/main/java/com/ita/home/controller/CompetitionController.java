@@ -73,10 +73,16 @@ public class CompetitionController {
         MultipartFile picture = request.getPicture();
         //参数校验
         ThrowUtils.throwIf(id == null || id < 0, "请选择要更新的竞赛信息");
-        ThrowUtils.throwIf(title == null || title.length() < 4 || title.length() > 20, "标题长度必须在4到20个字符之间");
-        ThrowUtils.throwIf(content == null || content.length() < 6 || content.length() > 200, "内容长度必须在6到200个字符之间");
-        ThrowUtils.throwIf(picture == null, "请选择图片");
-        ThrowUtils.throwIf(!competitionService.isValidPictureType(picture.getContentType()), "请上传有效的图片文件(jpg/jpeg/png/gif)");
+        if (title != null){
+            ThrowUtils.throwIf(title.length() < 4 || title.length() > 20, "标题长度必须在4到20个字符之间");
+        }
+        if (content != null){
+            ThrowUtils.throwIf(content.length() < 6 || content.length() > 200, "内容长度必须在6到200个字符之间");
+        }
+        if (picture != null){
+            ThrowUtils.throwIf(!competitionService.isValidPictureType(picture.getContentType()), "请上传有效的图片文件(jpg/jpeg/png/gif)");
+        }
+
         boolean result = competitionService.updateCompetition(id, title, content, picture);
         ThrowUtils.throwIf(!result, "更新竞赛信息失败");
         return Result.success("竞赛信息更新成功");

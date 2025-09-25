@@ -19,22 +19,18 @@ import org.springframework.web.multipart.MultipartFile;
 @Schema(description = "竞赛信息保存请求")
 public class CompetitionSaveRequest {
 
-    @NonNull
     @Schema(description = "竞赛编号", example = "1", required = true)
     private Long id;
 
-    /** 竞赛标题 - 必填*/
-    @NonNull
+    /** 竞赛标题 - 选填*/
     @Schema(description = "标题", example = "蓝桥杯省二", required = true, minLength = 4, maxLength = 20)
     private String title;
 
-    /** 竞赛内容 - 必填*/
-    @NonNull
+    /** 竞赛内容 - 选填*/
     @Schema(description = "内容", example = "这是司志俊同学在2024年蓝桥杯四川赛区取得的优异成绩", required = true, minLength = 6, maxLength = 200)
     private String content;
 
-    /** 竞赛图片 - 必填*/
-    @NonNull
+    /** 竞赛图片 - 选填*/
     @Schema(description = "图片", example = "获奖证书", required = true, maxLength = 200)
     private MultipartFile picture;
 
