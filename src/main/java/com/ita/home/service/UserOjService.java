@@ -35,10 +35,17 @@ public interface UserOjService {
     UserOj getUserOjAccount(Long userId);
 
     /**
-     * 获取用户各个平台的数据
+     * 绕过了缓存，仅限内部特殊业务调用外部禁止调用，直接获取实时Oj信息
      * @param userId 用户id
      * @return 返回ojUserDataVo对象
      */
-    OjUserDataVo getOjUserDataVo(Long userId);
+    OjUserDataVo getRealTimeOjUserDataVo(Long userId);
+
+    /**
+     * 从caffeine缓存->数据库缓存->数据库如果无效，获取实时数据 -> 再写回数据库和caffeine
+     * @param userId 用户id
+     * @return 返回OjUserDataVo对象
+     */
+    OjUserDataVo getCacheOjUserDataVo(Long userId);
 
 }

@@ -257,8 +257,8 @@ public class UserController {
                 return Result.error("用户不存在");
             }
 
-            // 获取实时做题数据
-            OjUserDataVo ojUserDataVo = userOjService.getOjUserDataVo(currentUserId);
+            // 获取缓存ac
+            OjUserDataVo ojUserDataVo = userOjService.getCacheOjUserDataVo(currentUserId);
             // 构建返回数据
             Map<String, Object> profile = new HashMap<>();
             profile.put("id", user.getId());

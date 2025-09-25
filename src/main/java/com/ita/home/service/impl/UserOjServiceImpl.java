@@ -1,18 +1,19 @@
 package com.ita.home.service.impl;
 
 
+import com.github.benmanes.caffeine.cache.Cache;
 import com.ita.home.mapper.UserOjMapper;
 import com.ita.home.model.dto.OjUserDataDto;
 import com.ita.home.model.entity.UserOj;
 import com.ita.home.model.vo.OjUserDataVo;
 import com.ita.home.service.UserOjService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
-
 import jakarta.annotation.PreDestroy;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -21,21 +22,37 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 用户OJ平台账号服务实现类
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class UserOjServiceImpl implements UserOjService {
 
-    private final UserOjMapper userOjMapper;
-    private final RestTemplate restTemplate;
 
     /** 线程池用于并行调用API */
-    private final ExecutorService executorService = Executors.newFixedThreadPool(4);
+    private final ExecutorService executorService;
+    private final UserOjMapper userOjMapper;
+    private final RestTemplate restTemplate;
+    private final Cache<String, OjUserDataVo> ojDataCache;
+    private final AsyncOjUpdateService asyncOjUpdateService;
+    @Value("${ita.oj.cache.expire-hours}")
+    private Integer expireHours;
+
+    @Autowired
+    public UserOjServiceImpl(@Qualifier("ojApiExecutorService") ExecutorService executorService,
+                             UserOjMapper userOjMapper,
+                             RestTemplate restTemplate,
+                             @Qualifier("ojDataCache") Cache<String, OjUserDataVo> ojDataCache,
+                             AsyncOjUpdateService asyncOjUpdateService) {
+        this.executorService = executorService;
+        this.userOjMapper = userOjMapper;
+        this.restTemplate = restTemplate;
+        this.ojDataCache = ojDataCache;
+        this.asyncOjUpdateService = asyncOjUpdateService;
+    }
 
     /** OJHunt API的基础URL */
     @Value("${ita.oj.target}")
@@ -78,8 +95,77 @@ public class UserOjServiceImpl implements UserOjService {
         return userOjMapper.findByUserId(userId);
     }
 
+    /**
+     * 后续controller层获取oj信息均从这里获取
+     */
     @Override
-    public OjUserDataVo getOjUserDataVo(Long userId) {
+    public OjUserDataVo getCacheOjUserDataVo(Long userId) {
+        long startTime = System.nanoTime();
+        String cacheKey = "oj_data:" + userId;
+
+        try {
+            // 1. 先检查Caffeine缓存
+            OjUserDataVo cachedData = ojDataCache.getIfPresent(cacheKey);
+            if (cachedData != null) {
+                log.info("用户{}命中Caffeine缓存", userId);
+                // 异步更新访问时间
+                asyncOjUpdateService.updateLastAccessTimeAsync(userId);
+                return cachedData;
+            }
+
+            // 2. 检查数据库缓存
+            UserOj userOj = userOjMapper.findByUserId(userId);
+            if (userOj == null) {
+                log.warn("用户{}的OJ账号信息不存在", userId);
+                return OjUserDataVo.builder()
+                        .ojUserDataDtoList(new ArrayList<>())
+                        .totalAc(0)
+                        .totalSubmit(0)
+                        .build();
+            }
+
+            // 3. 判断数据库缓存是否有效
+            if (isDatabaseCacheValid(userOj)) {
+                log.info("用户{}命中数据库缓存", userId);
+                // 构建VO并放入Caffeine缓存，不反会ac list
+                OjUserDataVo dbCachedData = buildVoFromDatabase(userOj);
+                ojDataCache.put(cacheKey, dbCachedData);
+
+                // 异步更新访问时间
+                asyncOjUpdateService.updateLastAccessTimeAsync(userId);
+                return dbCachedData;
+            }
+
+            // 4. 缓存都无效，获取实时数据
+            log.info("用户{}缓存失效，获取实时数据", userId);
+            OjUserDataVo realTimeData = getRealTimeOjUserDataVo(userOj.getUserId());
+
+            // 5. 放入Caffeine缓存
+            realTimeData.setOjUserDataDtoList(new ArrayList<>());
+            ojDataCache.put(cacheKey, realTimeData);
+
+            // 6. 异步更新数据库
+            asyncOjUpdateService.updateUserOjDataAsync(realTimeData, userOj.getUserId());
+
+            return realTimeData;
+
+        } catch (Exception e) {
+            log.error("获取用户{}OJ数据失败", userId, e);
+            return OjUserDataVo.builder()
+                    .ojUserDataDtoList(new ArrayList<>())
+                    .totalAc(0)
+                    .totalSubmit(0)
+                    .build();
+        } finally {
+            long endTime = System.nanoTime();
+            log.info("用户{}获取OJ数据耗时: {}ms", userId, (endTime - startTime) / 1_000_000);
+        }
+    }
+    /**
+     * 绕过了缓存，仅限内部特殊业务调用外部禁止调用，直接获取实时Oj信息
+     */
+    @Override
+    public OjUserDataVo getRealTimeOjUserDataVo(Long userId) {
         // 记录方法开始时间
         long startTime = System.nanoTime();
         
@@ -118,7 +204,12 @@ public class UserOjServiceImpl implements UserOjService {
                 
                 CompletableFuture<OjUserDataDto> future = CompletableFuture.supplyAsync(() -> {
                     return fetchSinglePlatformData(platformCode, username);
-                }, executorService);
+                }, executorService)
+                .orTimeout(10, TimeUnit.SECONDS)
+                .exceptionally(throwable -> {
+                    log.error("平台{}数据获取失败（超时或异常），用户名：{}", platformCode, username, throwable);
+                    return null; // 超时/异常时返回null，不影响其他任务
+                });
                 
                 futures.add(future);
             }
@@ -164,7 +255,11 @@ public class UserOjServiceImpl implements UserOjService {
 
         } catch (Exception e) {
             log.error("获取用户{}OJ数据汇总失败", userId, e);
-            return null;
+            return OjUserDataVo.builder()
+                    .ojUserDataDtoList(new ArrayList<>())
+                    .totalAc(0)
+                    .totalSubmit(0)
+                    .build();
         }
     }
 
@@ -225,5 +320,31 @@ public class UserOjServiceImpl implements UserOjService {
             executorService.shutdown();
             log.info("OJ数据获取线程池已关闭");
         }
+    }
+
+    /**
+     * 判断数据库缓存是否有效
+     */
+    private boolean isDatabaseCacheValid(UserOj userOj) {
+        if (userOj.getCacheTime() == null ||
+                userOj.getTotalAcNum() == null ||
+                userOj.getTotalCommitNum() == null) {
+            return false;
+        }
+
+        LocalDateTime expireTime = userOj.getCacheTime()
+                .plusHours(expireHours);
+        return LocalDateTime.now().isBefore(expireTime);
+    }
+
+    /**
+     * 从数据库缓存构建VO
+     */
+    private OjUserDataVo buildVoFromDatabase(UserOj userOj) {
+        return OjUserDataVo.builder()
+                .ojUserDataDtoList(new ArrayList<>()) // 如果需要详细信息，需要额外存储
+                .totalAc(userOj.getTotalAcNum())
+                .totalSubmit(userOj.getTotalCommitNum())
+                .build();
     }
 }

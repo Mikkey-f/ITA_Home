@@ -45,7 +45,23 @@ public class UserOj {
     /** Codeforces用户名 */
     @Schema(description = "Codeforces用户名", example = "cf_user123")
     private String codeforceUsername;
-    
+
+    /** 四个平太的ac数之和 **/
+    @Schema(description = "四个平台的ac数之和", example = "100")
+    private Integer totalAcNum;
+
+    /** 四个平台commit之和 **/
+    @Schema(description = "四个平台的commit数之和", example = "1000")
+    private Integer totalCommitNum;
+
+    /** 最后方位时间 **/
+    @Schema(description = "最后访问时间")
+    private LocalDateTime lastAccessTime;
+
+    /** 数据缓存时间 **/
+    @Schema(description = "数据缓存时间")
+    private LocalDateTime cacheTime;
+
     /** 创建时间 */
     @Schema(description = "创建时间", example = "2025-09-24T15:30:00")
     private LocalDateTime createTime;

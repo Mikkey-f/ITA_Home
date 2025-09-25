@@ -72,3 +72,11 @@ springdoc:
     tags-sorter: alpha
     operations-sorter: alpha
 
+# 线程池配置
+thread-pool:
+  oj-api:
+    core-pool-size: ${ita.thread-pool.oj-api.core-pool-size}
+    max-pool-size: ${ita.thread-pool.oj-api.max-pool-size}
+    queue-capacity: ${ita.thread-pool.oj-api.queue-capacity}
+    keep-alive-seconds: ${ita.thread-pool.oj-api.keep-alive-seconds}
+
