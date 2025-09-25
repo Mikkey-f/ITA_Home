@@ -2,7 +2,10 @@ package com.ita.home.service;
 
 import com.ita.home.model.dto.OjUserDataDto;
 import com.ita.home.model.entity.UserOj;
+import com.ita.home.model.req.RankingRequest;
 import com.ita.home.model.vo.OjUserDataVo;
+import com.ita.home.model.vo.RankingPageVo;
+import com.ita.home.model.vo.UserRankingVo;
 
 import java.util.List;
 
@@ -47,5 +50,19 @@ public interface UserOjService {
      * @return 返回OjUserDataVo对象
      */
     OjUserDataVo getCacheOjUserDataVo(Long userId);
+
+    /**
+     * 获取用户刷题排名（分页）
+     * @param request 排名查询请求
+     * @return 排名分页结果
+     */
+    RankingPageVo getUserRanking(RankingRequest request);
+
+    /**
+     * 获取指定用户的排名信息
+     * @param userId 用户ID
+     * @return 用户排名信息
+     */
+    UserRankingVo getUserRankById(Long userId);
 
 }

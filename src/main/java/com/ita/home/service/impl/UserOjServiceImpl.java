@@ -2,10 +2,15 @@ package com.ita.home.service.impl;
 
 
 import com.github.benmanes.caffeine.cache.Cache;
+import com.ita.home.exception.BaseException;
 import com.ita.home.mapper.UserOjMapper;
 import com.ita.home.model.dto.OjUserDataDto;
+import com.ita.home.model.dto.UserRankingDto;
 import com.ita.home.model.entity.UserOj;
+import com.ita.home.model.req.RankingRequest;
 import com.ita.home.model.vo.OjUserDataVo;
+import com.ita.home.model.vo.RankingPageVo;
+import com.ita.home.model.vo.UserRankingVo;
 import com.ita.home.service.UserOjService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -161,6 +166,98 @@ public class UserOjServiceImpl implements UserOjService {
             log.info("用户{}获取OJ数据耗时: {}ms", userId, (endTime - startTime) / 1_000_000);
         }
     }
+
+    /**
+     * 获取排名页
+     */
+    @Override
+    public RankingPageVo getUserRanking(RankingRequest request) {
+        try {
+            int offset = (request.getPageNum() - 1) * request.getPageSize();
+            int limit = request.getPageSize();
+
+            // 根据条件选择不同的查询方法
+            List<UserRankingDto> rankingDtos;
+            Long total;
+
+            if (request.getOnlyActiveUsers()) {
+                rankingDtos = userOjMapper.findActiveUserRankings(offset, limit);
+                total = userOjMapper.countActiveUsers();
+            } else {
+                rankingDtos = userOjMapper.findAllUserRankings(offset, limit);
+                total = userOjMapper.countAllUsers();
+            }
+
+            // 计算排名和构建VO
+            List<UserRankingVo> rankings = new ArrayList<>();
+            for (int i = 0; i < rankingDtos.size(); i++) {
+                UserRankingDto dto = rankingDtos.get(i);
+                int rank = offset + i + 1;
+
+                double acRate = dto.getTotalSubmit() > 0
+                        ? (dto.getTotalAc() * 100.0 / dto.getTotalSubmit()) : 0.0;
+
+                rankings.add(UserRankingVo.builder()
+                        .rank(rank)
+                        .userId(dto.getUserId())
+                        .username(dto.getName())
+                        .totalAc(dto.getTotalAc())
+                        .totalSubmit(dto.getTotalSubmit())
+                        .acRate(Math.round(acRate * 100.0) / 100.0)
+                        .lastUpdateTime(dto.getLastUpdateTime())
+                        .build());
+            }
+
+            int totalPages = (int) Math.ceil((double) total / request.getPageSize());
+
+            return RankingPageVo.builder()
+                    .rankings(rankings)
+                    .total(total)
+                    .pageNum(request.getPageNum())
+                    .pageSize(request.getPageSize())
+                    .totalPages(totalPages)
+                    .hasNext(request.getPageNum() < totalPages)
+                    .hasPrevious(request.getPageNum() > 1)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("获取用户排名失败", e);
+            throw new BaseException("获取用户排名失败");
+        }
+    }
+
+    /**
+     * 获取具体用户排名
+     */
+    @Override
+    public UserRankingVo getUserRankById(Long userId) {
+        try {
+            UserRankingDto rankingDto = userOjMapper.findUserDataById(userId);
+            if (rankingDto == null) {
+                return null;
+            }
+            // 计算AC率
+            double acRate = rankingDto.getTotalSubmit() != null && rankingDto.getTotalSubmit() > 0
+                    ? (rankingDto.getTotalAc() * 100.0 / rankingDto.getTotalSubmit()) : 0.0;
+
+            // 计算排名
+            Integer rank = userOjMapper.countBetterUsers(rankingDto.getTotalAc(), rankingDto.getTotalSubmit()) + 1;
+
+            return UserRankingVo.builder()
+                    .rank(rank)
+                    .userId(rankingDto.getUserId())
+                    .username(rankingDto.getName())
+                    .totalAc(rankingDto.getTotalAc())
+                    .totalSubmit(rankingDto.getTotalSubmit())
+                    .acRate(Math.round(acRate * 100.0) / 100.0)
+                    .lastUpdateTime(rankingDto.getLastUpdateTime())
+                    .build();
+        } catch (Exception e) {
+            log.error("获取用户{}排名失败", userId, e);
+            throw new BaseException("获取用户排名失败");
+        }
+    }
+
     /**
      * 绕过了缓存，仅限内部特殊业务调用外部禁止调用，直接获取实时Oj信息
      */

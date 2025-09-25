@@ -1,6 +1,7 @@
 package com.ita.home.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.ita.home.model.dto.UserRankingDto;
 import com.ita.home.model.entity.User;
 import com.ita.home.model.entity.UserOj;
 import org.apache.ibatis.annotations.Mapper;
@@ -62,5 +63,74 @@ public interface UserOjMapper extends BaseMapper<UserOj> {
             "WHERE last_access_time < #{inactiveTime}")
     int clearInactiveUsersCache(@Param("inactiveTime") LocalDateTime inactiveTime);
 
+    /**
+     * 查询所有用户排名数据（分页）
+     */
+    @Select("SELECT " +
+            "uo.user_id as userId, " +
+            "u.name, " +
+            "IFNULL(uo.total_ac_num, 0) as totalAc, " +
+            "IFNULL(uo.total_commit_num, 0) as totalSubmit, " +
+            "uo.cache_time as lastUpdateTime " +
+            "FROM ita_home.user_oj uo " +
+            "INNER JOIN ita_home.user u ON uo.user_id = u.id " +
+            "ORDER BY uo.total_ac_num DESC, uo.total_commit_num ASC " +
+            "LIMIT #{limit} OFFSET #{offset}")
+    List<UserRankingDto> findAllUserRankings(@Param("offset") int offset,
+                                             @Param("limit") int limit);
 
+    /**
+     * 查询活跃用户排名数据（分页）
+     */
+    @Select("SELECT " +
+            "uo.user_id as userId, " +
+            "u.name as name, " +
+            "uo.total_ac_num as totalAc, " +
+            "uo.total_commit_num as totalSubmit, " +
+            "uo.cache_time as lastUpdateTime " +
+            "FROM ita_home.user_oj uo " +
+            "INNER JOIN ita_home.user u ON uo.user_id = u.id " +
+            "WHERE uo.total_ac_num > 0 " +
+            "ORDER BY uo.total_ac_num DESC, uo.total_commit_num ASC " +
+            "LIMIT #{limit} OFFSET #{offset}")
+    List<UserRankingDto> findActiveUserRankings(@Param("offset") int offset,
+                                                @Param("limit") int limit);
+
+    /**
+     * 统计所有用户数量
+     */
+    @Select("SELECT COUNT(*) FROM ita_home.user_oj uo INNER JOIN ita_home.user u ON uo.user_id = u.id")
+    Long countAllUsers();
+
+    /**
+     * 统计活跃用户数量
+     */
+    @Select("SELECT COUNT(*) FROM ita_home.user_oj uo " +
+            "INNER JOIN ita_home.user u ON uo.user_id = u.id " +
+            "WHERE uo.total_ac_num > 0")
+    Long countActiveUsers();
+
+    /**
+     * 查询指定用户数据
+     */
+    @Select("SELECT " +
+            "uo.user_id as userId, " +
+            "u.name as name, " +
+            "IFNULL(uo.total_ac_num, 0) as totalAc, " +
+            "IFNULL(uo.total_commit_num, 0) as totalSubmit, " +
+            "uo.cache_time as lastUpdateTime " +
+            "FROM ita_home.user_oj uo " +
+            "INNER JOIN ita_home.user u ON uo.user_id = u.id " +
+            "WHERE uo.user_id = #{userId}")
+    UserRankingDto findUserDataById(@Param("userId") Long userId);
+
+    /**
+     * 计算比指定用户成绩更好的用户数量
+     */
+    @Select("SELECT COUNT(*) FROM ita_home.user_oj " +
+            "WHERE (total_ac_num > #{totalAc} " +
+            "OR (total_ac_num = #{totalAc} AND total_commit_num < #{totalSubmit})) " +
+            "AND total_ac_num > 0")
+    Integer countBetterUsers(@Param("totalAc") Integer totalAc,
+                             @Param("totalSubmit") Integer totalSubmit);
 }

@@ -3,7 +3,10 @@ package com.ita.home.controller;
 import com.ita.home.annotation.RequireAuth;
 import com.ita.home.enums.OjPlatformEnum;
 import com.ita.home.model.entity.UserOj;
+import com.ita.home.model.req.RankingRequest;
 import com.ita.home.model.req.UpdateUserOjRequest;
+import com.ita.home.model.vo.RankingPageVo;
+import com.ita.home.model.vo.UserRankingVo;
 import com.ita.home.result.Result;
 import com.ita.home.service.UserOjService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,6 +14,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -82,4 +86,52 @@ public class UserOjController {
         }
     }
 
+    /**
+     * 获取用户刷题排名
+     */
+    @PostMapping("/ranking")
+    @Operation(summary = "获取用户刷题排名", description = "根据AC数和提交数获取用户排名，支持分页")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "获取成功"),
+            @ApiResponse(responseCode = "400", description = "请求参数错误"),
+            @ApiResponse(responseCode = "401", description = "未登录"),
+            @ApiResponse(responseCode = "404", description = "OJ账号不存在"),
+            @ApiResponse(responseCode = "500", description = "服务器内部错误")
+    })
+    @RequireAuth
+    public Result<RankingPageVo> getUserRanking(@Valid @RequestBody RankingRequest request) {
+        try {
+            RankingPageVo rankingPage = userOjService.getUserRanking(request);
+            return Result.success(rankingPage);
+        } catch (Exception e) {
+            log.error("获取用户排名失败", e);
+            return Result.error("获取用户排名失败");
+        }
+    }
+
+    /**
+     * 获取指定用户的排名信息
+     */
+    @GetMapping("/ranking/{userId}")
+    @Operation(summary = "获取指定用户排名", description = "获取指定用户在排行榜中的位置和信息")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "获取成功"),
+            @ApiResponse(responseCode = "400", description = "请求参数错误"),
+            @ApiResponse(responseCode = "401", description = "未登录"),
+            @ApiResponse(responseCode = "404", description = "OJ账号不存在"),
+            @ApiResponse(responseCode = "500", description = "服务器内部错误")
+    })
+    @RequireAuth
+    public Result<UserRankingVo> getUserRankById(@PathVariable Long userId) {
+        try {
+            UserRankingVo userRanking = userOjService.getUserRankById(userId);
+            if (userRanking == null) {
+                return Result.error("用户排名信息不存在");
+            }
+            return Result.success(userRanking);
+        } catch (Exception e) {
+            log.error("获取用户{}排名失败", userId, e);
+            return Result.error("获取用户排名失败");
+        }
+    }
 }
