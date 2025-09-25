@@ -435,6 +435,51 @@ const loginUser = async (data: LoginRequest): Promise<ApiResponse<LoginResponse>
 };
 ```
 
+### 2. UserOj (用户OJ平台账号实体)
+
+**表名:** `user_oj`  
+**描述:** 用户OJ平台账号信息实体，对应数据库user_oj表，用于存储用户在各个OJ平台的账号信息
+
+```java
+public class UserOj {
+    private Long id;                    // 主键ID - 自增
+    private Long userId;                // 用户ID - 关联user表
+    private String luoguUsername;       // 洛谷平台用户名
+    private String leetcodeCnUsername;  // LeetCode中国站用户名
+    private String nowcoderUserId;      // 牛客网用户ID
+    private String codeforceUsername;   // Codeforces用户名
+    private Integer totalAcNum;         // 四个平台AC数之和 (缓存字段)
+    private Integer totalCommitNum;     // 四个平台提交数之和 (缓存字段)
+    private LocalDateTime lastAccessTime; // 最后访问时间 (缓存字段)
+    private LocalDateTime cacheTime;    // 数据缓存时间 (缓存字段)
+    private LocalDateTime createTime;   // 创建时间
+    private LocalDateTime updateTime;   // 修改时间
+}
+```
+
+**字段详细说明:**
+
+| 字段名 | 类型 | 是否必填 | 约束 | 说明 | 示例值 |
+|--------|------|----------|------|------|--------|
+| id | Long | 否 | 主键自增 | OJ账号唯一标识 | 1 |
+| userId | Long | 是 | 外键关联user表 | 关联的用户ID | 123 |
+| luoguUsername | String | 否 | - | 洛谷平台用户名 | "luogu_user123" |
+| leetcodeCnUsername | String | 否 | - | LeetCode中国站用户名 | "leetcode_user123" |
+| nowcoderUserId | String | 否 | - | 牛客网用户ID | "nowcoder123" |
+| codeforceUsername | String | 否 | - | Codeforces用户名 | "cf_user123" |
+| totalAcNum | Integer | 否 | 缓存字段 | 四个平台AC数之和 | 150 |
+| totalCommitNum | Integer | 否 | 缓存字段 | 四个平台提交数之和 | 300 |
+| lastAccessTime | LocalDateTime | 否 | 缓存相关 | 最后访问时间 | "2025-09-25T10:30:00" |
+| cacheTime | LocalDateTime | 否 | 缓存相关 | 数据缓存时间 | "2025-09-25T10:30:00" |
+| createTime | LocalDateTime | 否 | 自动生成 | 创建时间 | "2025-09-22T15:30:00" |
+| updateTime | LocalDateTime | 否 | 自动更新 | 最后修改时间 | "2025-09-23T10:15:00" |
+
+**设计说明:**
+- 用户注册时自动创建对应的UserOj记录
+- 平台用户名字段允许为空，用户可以选择性绑定
+- totalAcNum和totalCommitNum为缓存字段，通过定时任务和实时接口更新
+- lastAccessTime和cacheTime用于缓存策略控制
+
 ---
 
 ## 版本更新记录
@@ -442,6 +487,7 @@ const loginUser = async (data: LoginRequest): Promise<ApiResponse<LoginResponse>
 | 版本 | 更新时间 | 更新内容 |
 |------|----------|----------|
 | v1.0 | 2025-09-23 | 初始版本，包含用户相关数据模型 |
+| v1.1 | 2025-09-25 | 新增UserOj实体模型，支持OJ平台账号管理 |
 
 ---
 

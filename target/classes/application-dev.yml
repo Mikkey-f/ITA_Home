@@ -20,5 +20,20 @@ ita:
         smtp:
           ssl:
             enable: true
+  thread-pool:
+    oj-api:
+      core-pool-size: 4
+      max-pool-size: 8
+      queue-capacity: 100
+      keep-alive-seconds: 60
+  oj:
+    target: https://ojhunt.com/api/crawlers
+    cache:
+      max-size: 1000
+      expire-hours: 6
+      active-user-days: 7
+      async-update-timeout-seconds: 30
+    schedule:
+      batch-size: 50
 jwt:
   secret: aXRhSG9tZUp3dFNlY3JldEtleTIwMjV8MTIzNDU2Nzg5MDEyMzQ1Njc4OTA

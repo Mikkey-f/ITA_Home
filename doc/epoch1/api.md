@@ -266,14 +266,38 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
   "code": 1,
   "msg": null,
   "data": {
-    "id": 1,
-    "name": "admin",
-    "avatar": 3,
-    "createTime": "2025-09-22T15:30:00",
-    "updateTime": "2025-09-23T10:15:00"
+    "id": 4,
+    "name": "mikkeyf",
+    "avatar": 9,
+    "createTime": "2025-09-25T00:15:01",
+    "updateTime": "2025-09-25T00:15:01",
+    "ojUserDataVo": {
+      "ojUserDataDtoList": [],
+      "totalAc": 422,
+      "totalSubmit": 1805
+    }
   }
 }
 ```
+
+**响应字段说明:**
+
+| 字段名 | 类型 | 说明 | 示例值 |
+|--------|------|------|--------|
+| id | Long | 用户ID | 4 |
+| name | String | 用户名 | "mikkeyf" |
+| avatar | Integer | 头像编号(1-9) | 9 |
+| createTime | String | 创建时间(ISO 8601格式) | "2025-09-25T00:15:01" |
+| updateTime | String | 更新时间(ISO 8601格式) | "2025-09-25T00:15:01" |
+| ojUserDataVo | Object | OJ平台数据汇总 | - |
+| ojUserDataVo.ojUserDataDtoList | Array | 各平台详细数据列表 | [] |
+| ojUserDataVo.totalAc | Integer | 总AC题目数 | 422 |
+| ojUserDataVo.totalSubmit | Integer | 总提交数 | 1805 |
+
+**注意事项:**
+- `ojUserDataVo` 字段包含用户在各OJ平台的数据汇总
+- `ojUserDataDtoList` 为空数组表示未配置具体平台账号或数据获取失败
+- `totalAc` 和 `totalSubmit` 为所有平台的汇总数据
 
 ---
 
@@ -454,6 +478,7 @@ http://localhost:8080/api
 | 版本 | 更新时间 | 更新内容 |
 |------|----------|----------|
 | v1.0 | 2025-09-23 | 初始版本，包含用户注册、登录、信息管理功能 |
+| v1.1 | 2025-09-25 | 获取个人信息接口新增OJ数据汇总字段(ojUserDataVo) |
 
 ---
 

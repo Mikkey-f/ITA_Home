@@ -21,6 +21,25 @@ CREATE TABLE IF NOT EXISTS `user` (
     INDEX `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户信息表';
 
+-- 用户oj表
+CREATE TABLE IF NOT EXISTS `user_oj`(
+                                      `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+                                      `user_id` BIGINT NOT NULL COMMENT '用户ID，关联user表',
+                                      `luogu_username` VARCHAR(50) NULL COMMENT '洛谷平台用户名',
+                                      `leetcode_cn_username` VARCHAR(50) NULL COMMENT 'LeetCode中国站用户名',
+                                      `nowcoder_user_id` VARCHAR(50) NULL COMMENT '牛客网用户ID',
+                                      `codeforce_username` VARCHAR(50) NULL COMMENT 'Codeforces用户名',
+                                      `total_ac_num` INT NULL COMMENT '四个平台ac数之和',
+                                      `total_commit_num` INT NULL COMMENT '四个平台commit数之和',
+                                      `last_access_time` DATETIME NULL COMMENT '最后访问时间',
+                                      `cache_time` DATETIME NULL COMMENT '数据缓存时间',
+                                      `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                      `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
+                                      PRIMARY KEY (`id`),
+                                      UNIQUE INDEX `uk_user_id` (`user_id`), -- 确保每个用户只有一条记录
+                                      INDEX `idx_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户OJ平台账号表';
+
 -- 创建竞赛信息表
 CREATE TABLE IF NOT EXISTS `competition` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '竞赛ID，主键',
