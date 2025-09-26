@@ -356,14 +356,65 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 | createTime | String | 创建时间(ISO 8601格式) | "2025-09-25T00:15:01" |
 | updateTime | String | 更新时间(ISO 8601格式) | "2025-09-25T00:15:01" |
 | ojUserDataVo | Object | OJ平台数据汇总 | - |
-| ojUserDataVo.ojUserDataDtoList | Array | 各平台详细数据列表 | [] |
+| ojUserDataVo.ojDataDtoList | Array | 各平台详细数据列表 | 见下表 |
 | ojUserDataVo.totalAc | Integer | 总AC题目数 | 422 |
 | ojUserDataVo.totalSubmit | Integer | 总提交数 | 1805 |
 
+**ojDataDtoList 字段结构:**
+
+| 字段名 | 类型 | 说明 | 示例值 |
+|--------|------|------|--------|
+| name | String | 平台名称 | "luogu" |
+| solved | Integer | 该平台AC数 | 120 |
+| submitted | Integer | 该平台提交数 | 200 |
+
+**完整响应示例（包含各平台数据）:**
+```json
+{
+  "code": 1,
+  "msg": null,
+  "data": {
+    "id": 4,
+    "name": "mikkeyf",
+    "avatar": 9,
+    "createTime": "2025-09-25T00:15:01",
+    "updateTime": "2025-09-25T00:15:01",
+    "ojUserDataVo": {
+      "ojDataDtoList": [
+        {
+          "name": "luogu",
+          "solved": 120,
+          "submitted": 200
+        },
+        {
+          "name": "leetcode",
+          "solved": 150,
+          "submitted": 300
+        },
+        {
+          "name": "nowcoder",
+          "solved": 80,
+          "submitted": 160
+        },
+        {
+          "name": "codeforces",
+          "solved": 72,
+          "submitted": 145
+        }
+      ],
+      "totalAc": 422,
+      "totalSubmit": 805
+    }
+  }
+}
+```
+
 **注意事项:**
 - `ojUserDataVo` 字段包含用户在各OJ平台的数据汇总
-- `ojUserDataDtoList` 为空数组表示未配置具体平台账号或数据获取失败
+- `ojDataDtoList` 现在包含用户已配置的各平台详细数据
+- 只有已绑定账号且有缓存数据的平台才会出现在列表中
 - `totalAc` 和 `totalSubmit` 为所有平台的汇总数据
+- 数据来源为数据库缓存，如需最新数据请调用刷新接口
 
 ---
 
@@ -546,6 +597,7 @@ http://localhost:8080/api
 | v1.0 | 2025-09-23 | 初始版本，包含用户注册、登录、信息管理功能 |
 | v1.1 | 2025-09-25 | 获取个人信息接口新增OJ数据汇总字段(ojUserDataVo) |
 | v1.2 | 2025-09-25 | 新增邮箱登录接口(/api/user/login/email) |
+| v1.3 | 2025-09-26 | 个人信息接口ojUserDataVo字段增强：ojDataDtoList现包含各平台详细AC和提交数据 |
 
 ---
 

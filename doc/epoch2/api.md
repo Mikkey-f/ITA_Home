@@ -130,11 +130,89 @@
 }
 ```
 
+### 3. 获取用户在指定平台的排名信息
+
+**接口描述:** 查询用户在指定OJ平台的排名、AC数、提交数等信息
+
+- **请求方式:** `GET`
+- **请求路径:** `/api/user-oj/platform-ranking/{platformId}`
+- **是否需要认证:** 是
+
+**路径参数:**
+
+| 参数名 | 类型 | 必填 | 约束 | 说明 | 示例 |
+|--------|------|------|------|------|------|
+| platformId | String | 是 | 枚举值 | 平台ID | "luogu" |
+
+**支持的平台ID:**
+- `leetcode`: LeetCode中国站
+- `luogu`: 洛谷
+- `codeforces`: Codeforces
+- `nowcoder`: 牛客网
+
+**请求示例:**
+```
+GET /api/user-oj/platform-ranking/luogu
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
+```
+
+**响应示例:**
+
+成功响应:
+```json
+{
+  "code": 1,
+  "msg": "获取成功",
+  "data": {
+    "platformId": "luogu",
+    "platformName": "洛谷",
+    "ranking": 25,
+    "acCount": 120,
+    "submitCount": 200,
+    "totalUsers": 1500,
+    "rankingPercentage": 1.67,
+    "username": "user123"
+  }
+}
+```
+
+失败响应:
+```json
+{
+  "code": 0,
+  "msg": "用户未配置洛谷账号",
+  "data": null
+}
+```
+
+**响应字段说明:**
+
+| 字段名 | 类型 | 说明 | 示例值 |
+|--------|------|------|--------|
+| platformId | String | 平台ID | "luogu" |
+| platformName | String | 平台中文名称 | "洛谷" |
+| ranking | Integer | 用户在该平台的排名 | 25 |
+| acCount | Integer | 该平台AC题目数 | 120 |
+| submitCount | Integer | 该平台提交次数 | 200 |
+| totalUsers | Integer | 该平台有数据的总用户数 | 1500 |
+| rankingPercentage | Double | 排名百分比(保留2位小数) | 1.67 |
+| username | String | 用户在该平台的用户名 | "user123" |
+
+**排名规则:**
+- 按AC数降序排列，AC数越多排名越靠前
+- AC数相同时，按提交数升序排列，提交数越少排名越靠前
+- 排名百分比 = (当前排名 / 总用户数) × 100
+
+**错误码说明:**
+- `不支持的OJ平台: {platformId}`: 传入的平台ID不在支持列表中
+- `用户OJ数据不存在`: 用户未创建OJ配置记录
+- `用户未配置{平台名}账号`: 用户未绑定该平台账号
+
 ---
 
 ## 用户OJ账号管理接口
 
-### 3. 更新用户OJ账号
+### 4. 更新用户OJ账号
 
 **接口描述:** 更新当前用户在指定OJ平台的账号信息
 
@@ -176,7 +254,7 @@
 
 ## 缓存管理接口
 
-### 4. 刷新用户OJ内存数据
+### 5. 刷新用户OJ内存数据
 
 **接口描述:** 直接刷新内存中的OJ信息，获取用户最新的刷题数据
 
@@ -339,6 +417,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 |------|----------|----------|
 | v2.0 | 2025-09-25 | 初始版本，包含OJ数据获取和排名功能 |
 | v2.1 | 2025-09-25 | 新增内存刷新接口(/api/user-oj/refresh) |
+| v2.2 | 2025-09-26 | 新增用户平台排名接口(/api/user-oj/platform-ranking/{platformId}) |
 
 ---
 
@@ -346,4 +425,4 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 
 如有疑问，请联系开发团队。
 
-**最后更新**: 2025-09-25
+**最后更新**: 2025-09-26

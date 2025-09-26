@@ -149,4 +149,37 @@ public interface UserOjMapper extends BaseMapper<UserOj> {
             "AND total_ac_num > 0")
     Integer countBetterUsers(@Param("totalAc") Integer totalAc,
                              @Param("totalSubmit") Integer totalSubmit);
+
+
+    /**
+     * 计算用户在指定平台的排名
+     * 排名规则：按AC数降序，AC数相同时按提交数升序
+     */
+    @Select("SELECT COUNT(*) + 1 FROM ita_home.user_oj " +
+            "WHERE CASE #{platformId} " +
+            "    WHEN 'luogu' THEN luogu_username IS NOT NULL AND luogu_username != '' " +
+            "        AND (luogu_ac_num > #{acCount} OR (luogu_ac_num = #{acCount} AND luogu_submit_num < #{submitCount})) " +
+            "    WHEN 'leetcode' THEN leetcode_cn_username IS NOT NULL AND leetcode_cn_username != '' " +
+            "        AND (leetcode_ac_num > #{acCount} OR (leetcode_ac_num = #{acCount} AND leetcode_submit_num < #{submitCount})) " +
+            "    WHEN 'nowcoder' THEN nowcoder_user_id IS NOT NULL AND nowcoder_user_id != '' " +
+            "        AND (nowcoder_ac_num > #{acCount} OR (nowcoder_ac_num = #{acCount} AND nowcoder_submit_num < #{submitCount})) " +
+            "    WHEN 'codeforces' THEN codeforce_username IS NOT NULL AND codeforce_username != '' " +
+            "        AND (codeforces_ac_num > #{acCount} OR (codeforces_ac_num = #{acCount} AND codeforces_submit_num < #{submitCount})) " +
+            "    ELSE FALSE END")
+    Integer calculateUserRanking(@Param("platformId") String platformId,
+                                 @Param("acCount") Integer acCount,
+                                 @Param("submitCount") Integer submitCount);
+
+    /**
+     * 获取指定平台有数据的总用户数
+     */
+    @Select("SELECT COUNT(*) FROM ita_home.user_oj " +
+            "WHERE CASE #{platformId} " +
+            "    WHEN 'luogu' THEN luogu_username IS NOT NULL AND luogu_username != '' " +
+            "    WHEN 'leetcode' THEN leetcode_cn_username IS NOT NULL AND leetcode_cn_username != '' " +
+            "    WHEN 'nowcoder' THEN nowcoder_user_id IS NOT NULL AND nowcoder_user_id != '' " +
+            "    WHEN 'codeforces' THEN codeforce_username IS NOT NULL AND codeforce_username != '' " +
+            "    ELSE FALSE END")
+    Integer getTotalUsersWithPlatformData(@Param("platformId") String platformId);
+
 }

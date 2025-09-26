@@ -5,6 +5,7 @@ import com.ita.home.model.entity.UserOj;
 import com.ita.home.model.req.RankingRequest;
 import com.ita.home.model.vo.OjUserDataVo;
 import com.ita.home.model.vo.RankingPageVo;
+import com.ita.home.model.vo.UserPlatformRankingVo;
 import com.ita.home.model.vo.UserRankingVo;
 
 import java.util.List;
@@ -64,5 +65,13 @@ public interface UserOjService {
      * @return 用户排名信息
      */
     UserRankingVo getUserRankById(Long userId);
+
+    /**
+     * 获取用户在指定平台的排名信息
+     * @param platformId 平台ID
+     * @param userId 用户ID
+     * @return 用户平台排名信息
+     */
+    UserPlatformRankingVo getUserPlatformRanking(String platformId, Long userId);
 
 }
