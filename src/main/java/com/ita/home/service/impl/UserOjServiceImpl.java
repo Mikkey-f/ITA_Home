@@ -2,8 +2,10 @@ package com.ita.home.service.impl;
 
 
 import com.github.benmanes.caffeine.cache.Cache;
+import com.ita.home.enums.OjPlatformEnum;
 import com.ita.home.exception.BaseException;
 import com.ita.home.mapper.UserOjMapper;
+import com.ita.home.model.dto.OjDataDto;
 import com.ita.home.model.dto.OjUserDataDto;
 import com.ita.home.model.dto.UserRankingDto;
 import com.ita.home.model.entity.UserOj;
@@ -123,7 +125,7 @@ public class UserOjServiceImpl implements UserOjService {
             if (userOj == null) {
                 log.warn("用户{}的OJ账号信息不存在", userId);
                 return OjUserDataVo.builder()
-                        .ojUserDataDtoList(new ArrayList<>())
+                        .ojDataDtoList(new ArrayList<>())
                         .totalAc(0)
                         .totalSubmit(0)
                         .build();
@@ -132,7 +134,7 @@ public class UserOjServiceImpl implements UserOjService {
             // 3. 判断数据库缓存是否有效
             if (isDatabaseCacheValid(userOj)) {
                 log.info("用户{}命中数据库缓存", userId);
-                // 构建VO并放入Caffeine缓存，不反会ac list
+                // 构建VO并放入Caffeine缓存
                 OjUserDataVo dbCachedData = buildVoFromDatabase(userOj);
                 ojDataCache.put(cacheKey, dbCachedData);
 
@@ -141,23 +143,14 @@ public class UserOjServiceImpl implements UserOjService {
                 return dbCachedData;
             }
 
-            // 4. 缓存都无效，获取实时数据
+            // 4. 缓存都无效，获取实时数据，方法内刷新数据库和缓存
             log.info("用户{}缓存失效，获取实时数据", userId);
-            OjUserDataVo realTimeData = getRealTimeOjUserDataVo(userOj.getUserId());
-
-            // 5. 放入Caffeine缓存
-            realTimeData.setOjUserDataDtoList(new ArrayList<>());
-            ojDataCache.put(cacheKey, realTimeData);
-
-            // 6. 异步更新数据库
-            asyncOjUpdateService.updateUserOjDataAsync(realTimeData, userOj.getUserId());
-
-            return realTimeData;
+            return getRealTimeOjUserDataVo(userOj.getUserId());
 
         } catch (Exception e) {
             log.error("获取用户{}OJ数据失败", userId, e);
             return OjUserDataVo.builder()
-                    .ojUserDataDtoList(new ArrayList<>())
+                    .ojDataDtoList(new ArrayList<>())
                     .totalAc(0)
                     .totalSubmit(0)
                     .build();
@@ -259,7 +252,8 @@ public class UserOjServiceImpl implements UserOjService {
     }
 
     /**
-     * 绕过了缓存，仅限内部特殊业务调用外部禁止调用，直接获取实时Oj信息
+     * 绕过了缓存，仅限内部特殊业务调用外部禁止调用，直接获取实时Oj信息。
+     * 并且刷新了缓存和数据库
      */
     @Override
     public OjUserDataVo getRealTimeOjUserDataVo(Long userId) {
@@ -272,7 +266,7 @@ public class UserOjServiceImpl implements UserOjService {
             if (userOj == null) {
                 log.warn("用户{}的OJ账号信息不存在", userId);
                 return OjUserDataVo.builder()
-                        .ojUserDataDtoList(new ArrayList<>())
+                        .ojDataDtoList(new ArrayList<>())
                         .totalAc(0)
                         .totalSubmit(0)
                         .build();
@@ -285,7 +279,7 @@ public class UserOjServiceImpl implements UserOjService {
                 log.warn("用户{}没有配置任何OJ平台账号", userId);
 
                 return OjUserDataVo.builder()
-                        .ojUserDataDtoList(new ArrayList<>())
+                        .ojDataDtoList(new ArrayList<>())
                         .totalAc(0)
                         .totalSubmit(0)
                         .build();
@@ -317,7 +311,7 @@ public class UserOjServiceImpl implements UserOjService {
             );
 
             // 获取所有结果并汇总
-            List<OjUserDataDto> ojUserDataDtoList = new ArrayList<>();
+            List<OjDataDto> ojDataDtos = new ArrayList<>();
             int totalAc = 0;
             int totalSubmit = 0;
 
@@ -327,9 +321,15 @@ public class UserOjServiceImpl implements UserOjService {
                 try {
                     OjUserDataDto result = future.get();
                     if (result != null && Boolean.FALSE.equals(result.getError()) && result.getData() != null) {
-                        ojUserDataDtoList.add(result);
-                        
                         OjUserDataDto.UserData data = result.getData();
+
+                        OjDataDto ojDataDto = OjDataDto.builder()
+                                .name(data.getOjName())
+                                .solved(data.getSolved())
+                                .submitted(data.getSubmissions())
+                                .build();
+                        ojDataDtos.add(ojDataDto);
+
                         if (data.getSolved() != null) {
                             totalAc += data.getSolved();
                         }
@@ -344,16 +344,21 @@ public class UserOjServiceImpl implements UserOjService {
             long endTime = System.nanoTime();
             log.info("{}ns", endTime - startTime);
             // 构建返回结果
-            return OjUserDataVo.builder()
-                    .ojUserDataDtoList(ojUserDataDtoList)
+            OjUserDataVo ojUserDataVo = OjUserDataVo.builder()
+                    .ojDataDtoList(ojDataDtos)
                     .totalAc(totalAc)
                     .totalSubmit(totalSubmit)
                     .build();
+            // 异步更新数据库和缓存
+            asyncOjUpdateService.updateUserOjDataAsync(ojUserDataVo, userId);
+            String cacheKey = "oj_data:" + userId;
+            ojDataCache.put(cacheKey, ojUserDataVo);
+            return ojUserDataVo;
 
         } catch (Exception e) {
             log.error("获取用户{}OJ数据汇总失败", userId, e);
             return OjUserDataVo.builder()
-                    .ojUserDataDtoList(new ArrayList<>())
+                    .ojDataDtoList(new ArrayList<>())
                     .totalAc(0)
                     .totalSubmit(0)
                     .build();
@@ -376,6 +381,7 @@ public class UserOjServiceImpl implements UserOjService {
                 OjUserDataDto.UserData data = response.getData();
                 log.info("成功获取{}平台数据: user={}, solved={}, submissions={}",
                         platformCode, username, data.getSolved(), data.getSubmissions());
+                response.getData().setOjName(OjPlatformEnum.getByPlatformCode(platformCode).getPlatformId());
                 return response;
             } else {
                 log.warn("{}平台API返回错误或无数据: user={}", platformCode, username);
@@ -438,8 +444,46 @@ public class UserOjServiceImpl implements UserOjService {
      * 从数据库缓存构建VO
      */
     private OjUserDataVo buildVoFromDatabase(UserOj userOj) {
+        List<OjDataDto> ojDataDtoList = new ArrayList<>();
+
+        // 洛谷平台数据
+        if (userOj.getLuoguUsername() != null && !userOj.getLuoguUsername().trim().isEmpty()) {
+            ojDataDtoList.add(OjDataDto.builder()
+                    .name("luogu")
+                    .solved(userOj.getLuoguAcNum() != null ? userOj.getLuoguAcNum() : 0)
+                    .submitted(userOj.getLuoguSubmitNum() != null ? userOj.getLuoguSubmitNum() : 0)
+                    .build());
+        }
+
+        // LeetCode中国站数据
+        if (userOj.getLeetcodeCnUsername() != null && !userOj.getLeetcodeCnUsername().trim().isEmpty()) {
+            ojDataDtoList.add(OjDataDto.builder()
+                    .name("leetcode")
+                    .solved(userOj.getLeetcodeAcNum() != null ? userOj.getLeetcodeAcNum() : 0)
+                    .submitted(userOj.getLeetcodeSubmitNum() != null ? userOj.getLeetcodeSubmitNum() : 0)
+                    .build());
+        }
+
+        // 牛客网数据
+        if (userOj.getNowcoderUserId() != null && !userOj.getNowcoderUserId().trim().isEmpty()) {
+            ojDataDtoList.add(OjDataDto.builder()
+                    .name("nowcoder")
+                    .solved(userOj.getNowcoderAcNum() != null ? userOj.getNowcoderAcNum() : 0)
+                    .submitted(userOj.getNowcoderSubmitNum() != null ? userOj.getNowcoderSubmitNum() : 0)
+                    .build());
+        }
+
+        // Codeforces数据
+        if (userOj.getCodeforceUsername() != null && !userOj.getCodeforceUsername().trim().isEmpty()) {
+            ojDataDtoList.add(OjDataDto.builder()
+                    .name("codeforces")
+                    .solved(userOj.getCodeforceAcNum() != null ? userOj.getCodeforceAcNum() : 0)
+                    .submitted(userOj.getCodeforceSubmitNum() != null ? userOj.getCodeforceSubmitNum() : 0)
+                    .build());
+        }
+
         return OjUserDataVo.builder()
-                .ojUserDataDtoList(new ArrayList<>()) // 如果需要详细信息，需要额外存储
+                .ojDataDtoList(ojDataDtoList)
                 .totalAc(userOj.getTotalAcNum())
                 .totalSubmit(userOj.getTotalCommitNum())
                 .build();

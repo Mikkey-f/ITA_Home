@@ -31,72 +31,9 @@
 
 ## 用户OJ数据接口
 
-### 1. 获取用户OJ综合数据
-
-**接口描述:** 获取当前用户在各个OJ平台的综合数据，包含AC数、提交数等统计信息
-
-- **请求方式:** `GET`
-- **请求路径:** `/api/user/oj-data`
-- **是否需要认证:** 是
-
-**请求参数:** 无
-
-**响应示例:**
-```json
-{
-  "code": 1,
-  "msg": "获取成功",
-  "data": {
-    "ojUserDataDtoList": [
-      {
-        "platform": "leetcode_cn",
-        "username": "user123",
-        "error": false,
-        "data": {
-          "solved": 120,
-          "submissions": 250,
-          "acceptanceRate": 48.0,
-          "ranking": 15670
-        }
-      },
-      {
-        "platform": "luogu",
-        "username": "luogu_user",
-        "error": false,
-        "data": {
-          "solved": 85,
-          "submissions": 180,
-          "acceptanceRate": 47.2,
-          "ranking": null
-        }
-      }
-    ],
-    "totalAc": 205,
-    "totalSubmit": 430
-  }
-}
-```
-
-**响应字段说明:**
-
-| 字段名 | 类型 | 说明 | 示例值 |
-|--------|------|------|--------|
-| ojUserDataDtoList | Array | 各平台详细数据列表 | - |
-| platform | String | 平台代码 | "leetcode_cn" |
-| username | String | 平台用户名 | "user123" |
-| error | Boolean | 是否有错误 | false |
-| data.solved | Integer | AC题目数 | 120 |
-| data.submissions | Integer | 总提交数 | 250 |
-| data.acceptanceRate | Double | 通过率 | 48.0 |
-| data.ranking | Integer | 平台排名 | 15670 |
-| totalAc | Integer | 所有平台AC数之和 | 205 |
-| totalSubmit | Integer | 所有平台提交数之和 | 430 |
-
----
-
 ## 用户排名接口
 
-### 2. 获取用户刷题排名（分页）
+### 1. 获取用户刷题排名（分页）
 
 **接口描述:** 根据AC数和提交数获取用户排名列表，支持分页查询
 
@@ -162,7 +99,7 @@
 - AC数相同时，按提交数从低到高排序
 - 提交数越少说明效率越高
 
-### 3. 获取指定用户排名
+### 2. 获取指定用户排名
 
 **接口描述:** 获取指定用户在排行榜中的位置和详细信息
 
@@ -197,7 +134,7 @@
 
 ## 用户OJ账号管理接口
 
-### 4. 更新用户OJ账号
+### 3. 更新用户OJ账号
 
 **接口描述:** 更新当前用户在指定OJ平台的账号信息
 
@@ -234,6 +171,78 @@
   "data": null
 }
 ```
+
+---
+
+## 缓存管理接口
+
+### 4. 刷新用户OJ内存数据
+
+**接口描述:** 直接刷新内存中的OJ信息，获取用户最新的刷题数据
+
+- **请求方式:** `POST`
+- **请求路径:** `/api/user-oj/refresh`
+- **是否需要认证:** 是
+
+**请求示例:**
+```
+POST /api/user-oj/refresh
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
+```
+
+**响应示例:**
+
+成功响应:
+```json
+{
+  "code": 1,
+  "msg": "刷新成功",
+  "data": {
+    "ojUserDataDtoList": [
+      {
+        "platform": "leetcode",
+        "username": "user123",
+        "solved": 120,
+        "submissions": 250,
+        "acceptanceRate": 48.0,
+        "ranking": 15670,
+        "lastUpdateTime": "2025-09-25T10:30:00"
+      },
+      {
+        "platform": "luogu",
+        "username": "user123",
+        "solved": 200,
+        "submissions": 300,
+        "acceptanceRate": 66.7,
+        "ranking": 8500,
+        "lastUpdateTime": "2025-09-25T10:30:00"
+      }
+    ],
+    "totalAc": 320,
+    "totalSubmit": 550
+  }
+}
+```
+
+失败响应:
+```json
+{
+  "code": 0,
+  "msg": "获取用户排名失败",
+  "data": null
+}
+```
+
+**功能说明:**
+- 绕过Caffeine本地缓存，直接从外部API获取最新数据
+- 异步更新数据库和内存缓存
+- 返回用户在各个OJ平台的实时数据汇总
+- 请求可能需要3-8秒时间（调用外部API）
+
+**错误码说明:**
+- 未登录：需要JWT认证
+- OJ账号不存在：用户未绑定任何OJ平台账号
+- 服务器内部错误：外部API调用失败或系统异常
 
 ---
 
@@ -329,6 +338,7 @@
 | 版本 | 更新时间 | 更新内容 |
 |------|----------|----------|
 | v2.0 | 2025-09-25 | 初始版本，包含OJ数据获取和排名功能 |
+| v2.1 | 2025-09-25 | 新增内存刷新接口(/api/user-oj/refresh) |
 
 ---
 

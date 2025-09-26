@@ -5,6 +5,7 @@ import com.ita.home.enums.OjPlatformEnum;
 import com.ita.home.model.entity.UserOj;
 import com.ita.home.model.req.RankingRequest;
 import com.ita.home.model.req.UpdateUserOjRequest;
+import com.ita.home.model.vo.OjUserDataVo;
 import com.ita.home.model.vo.RankingPageVo;
 import com.ita.home.model.vo.UserRankingVo;
 import com.ita.home.result.Result;
@@ -103,6 +104,30 @@ public class UserOjController {
         try {
             RankingPageVo rankingPage = userOjService.getUserRanking(request);
             return Result.success(rankingPage);
+        } catch (Exception e) {
+            log.error("获取用户排名失败", e);
+            return Result.error("获取用户排名失败");
+        }
+    }
+
+    /**
+     * 获取用户刷题排名
+     */
+    @PostMapping("/refresh")
+    @Operation(summary = "直接刷新内存中的oj信息", description = "刷新oj信息")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "获取成功"),
+            @ApiResponse(responseCode = "400", description = "请求参数错误"),
+            @ApiResponse(responseCode = "401", description = "未登录"),
+            @ApiResponse(responseCode = "404", description = "OJ账号不存在"),
+            @ApiResponse(responseCode = "500", description = "服务器内部错误")
+    })
+    @RequireAuth
+    public Result<OjUserDataVo> refreshUserOj(HttpServletRequest httpRequest) {
+        try {
+            Long currentUserId = (Long) httpRequest.getAttribute("currentUserId");
+            OjUserDataVo realTimeOjUserDataVo = userOjService.getRealTimeOjUserDataVo(currentUserId);
+            return Result.success(realTimeOjUserDataVo);
         } catch (Exception e) {
             log.error("获取用户排名失败", e);
             return Result.error("获取用户排名失败");

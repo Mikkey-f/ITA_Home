@@ -36,6 +36,10 @@ public class OjUserDataDto {
     @Builder
     @Schema(description = "用户解题数据")
     public static class UserData {
+
+        /** 名字 **/
+        @Schema(description = "请求的oj名字")
+        private String ojName;
         
         /** 解决题目数量 */
         @Schema(description = "解决题目数量", example = "97")

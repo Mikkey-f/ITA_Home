@@ -1,6 +1,7 @@
 package com.ita.home.service.impl;
 
 import com.ita.home.mapper.UserOjMapper;
+import com.ita.home.model.dto.OjDataDto;
 import com.ita.home.model.entity.UserOj;
 import com.ita.home.model.vo.OjUserDataVo;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +32,7 @@ public class AsyncOjUpdateService {
     }
 
     /**
-     * 使用ojApiExecutorService线程池，异步更新用户OJ数据
+     * 使用ojApiExecutorService线程池，异步更新用户数据库OJ数据
      */
     @Async("ojApiExecutorService")
     public CompletableFuture<Boolean> updateUserOjDataAsync(OjUserDataVo ojDataVo, Long userId) {
@@ -87,13 +88,63 @@ public class AsyncOjUpdateService {
     private boolean updateDatabase(Long userId, OjUserDataVo data) {
         try {
             LocalDateTime now = LocalDateTime.now();
+
+            // 从ojDataDtoList中提取各个平台的数据
+            int luoguAcNum = 0, luoguSubmitNum = 0;
+            int leetcodeAcNum = 0, leetcodeSubmitNum = 0;
+            int nowcoderAcNum = 0, nowcoderSubmitNum = 0;
+            int codeforceAcNum = 0, codeforceSubmitNum = 0;
+
+            if (data.getOjDataDtoList() != null) {
+                for (OjDataDto ojData : data.getOjDataDtoList()) {
+                    String platformName = ojData.getName();
+                    if (platformName == null) continue;
+
+                    switch (platformName.toLowerCase()) {
+                        case "luogu":
+                        case "洛谷":
+                            luoguAcNum = ojData.getSolved() != null ? ojData.getSolved() : 0;
+                            luoguSubmitNum = ojData.getSubmitted() != null ? ojData.getSubmitted() : 0;
+                            break;
+                        case "leetcode":
+                        case "leetcode-cn":
+                        case "力扣":
+                            leetcodeAcNum = ojData.getSolved() != null ? ojData.getSolved() : 0;
+                            leetcodeSubmitNum = ojData.getSubmitted() != null ? ojData.getSubmitted() : 0;
+                            break;
+                        case "nowcoder":
+                        case "牛客":
+                        case "牛客网":
+                            nowcoderAcNum = ojData.getSolved() != null ? ojData.getSolved() : 0;
+                            nowcoderSubmitNum = ojData.getSubmitted() != null ? ojData.getSubmitted() : 0;
+                            break;
+                        case "codeforces":
+                        case "cf":
+                            codeforceAcNum = ojData.getSolved() != null ? ojData.getSolved() : 0;
+                            codeforceSubmitNum = ojData.getSubmitted() != null ? ojData.getSubmitted() : 0;
+                            break;
+                        default:
+                            log.warn("未知的OJ平台: {}", platformName);
+                            break;
+                    }
+                }
+            }
+
             int result = userOjMapper.updateCacheData(
                     userId,
                     data.getTotalAc(),
                     data.getTotalSubmit(),
-                    now,
-                    now,
-                    now
+                    luoguAcNum,
+                    luoguSubmitNum,
+                    leetcodeAcNum,
+                    leetcodeSubmitNum,
+                    nowcoderAcNum,
+                    nowcoderSubmitNum,
+                    codeforceAcNum,
+                    codeforceSubmitNum,
+                    now,  // cacheTime
+                    now,  // lastAccessTime
+                    now   // updateTime
             );
             return result > 0;
         } catch (Exception e) {

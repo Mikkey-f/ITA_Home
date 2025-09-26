@@ -4,6 +4,7 @@ import com.ita.home.annotation.RequireAuth;
 import com.ita.home.constant.EmailConstant;
 import com.ita.home.model.entity.User;
 import com.ita.home.model.event.EmailEvent;
+import com.ita.home.model.req.LoginByEmailRequest;
 import com.ita.home.model.req.LoginByNameRequest;
 import com.ita.home.model.req.RegisterRequest;
 import com.ita.home.model.req.UpdatePasswordRequest;
@@ -122,7 +123,7 @@ public class UserController {
 
     /**
      * 用户登录接口
-     * POST /api/user/login
+     * POST /api/user/login/name
      */
     @Operation(summary = "用户使用用户名登录", description = "验证用户名和密码，返回JWT令牌和用户信息")
     @ApiResponses(value = {
@@ -130,7 +131,7 @@ public class UserController {
             @ApiResponse(responseCode = "400", description = "用户名或密码错误")
     })
     @PostMapping("/login/name")
-    public Result<Map<String, Object>> login(@RequestBody LoginByNameRequest loginRequest) {
+    public Result<Map<String, Object>> loginWithName(@RequestBody LoginByNameRequest loginRequest) {
         try {
             // 执行登录验证
             User user = userService.loginByName(loginRequest);
@@ -148,6 +149,54 @@ public class UserController {
             data.put("tokenType", "Bearer");             // 令牌类型
             data.put("expiresIn", jwtUtil.getExpireHours() * 3600); // 过期时间（秒）
             
+            // 用户信息
+            Map<String, Object> userInfo = new HashMap<>();
+            userInfo.put("id", user.getId());
+            userInfo.put("name", user.getName());
+            userInfo.put("avatar", user.getAvatar());
+            userInfo.put("createTime", user.getCreateTime());
+            data.put("user", userInfo);
+
+            log.info("用户登录成功: {} (ID: {})", user.getName(), user.getId());
+            return Result.success(data);
+
+        } catch (NullPointerException e) {
+            log.error("登录请求参数为空: {}", e.getMessage());
+            return Result.error("用户名和密码不能为空");
+        } catch (Exception e) {
+            log.error("登录过程中发生异常", e);
+            return Result.error("系统异常，请联系管理员");
+        }
+    }
+
+    /**
+     * 用户登录接口
+     * POST /api/user/login/email
+     */
+    @Operation(summary = "用户使用邮箱登录", description = "验证邮箱和密码，返回JWT令牌和用户信息")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "登录成功，返回JWT令牌"),
+            @ApiResponse(responseCode = "400", description = "用户名或密码错误")
+    })
+    @PostMapping("/login/email")
+    public Result<Map<String, Object>> loginWithEmail(@RequestBody LoginByEmailRequest loginRequest) {
+        try {
+            // 执行登录验证
+            User user = userService.loginByEmail(loginRequest);
+            if (user == null) {
+                log.warn("登录失败，邮箱或密码错误: {}", loginRequest.getEmail());
+                return Result.error("邮箱或密码错误");
+            }
+
+            // 生成JWT令牌
+            String token = jwtUtil.generateToken(user.getId(), user.getName());
+
+            // 构建返回数据
+            Map<String, Object> data = new HashMap<>();
+            data.put("token", token);                    // JWT令牌
+            data.put("tokenType", "Bearer");             // 令牌类型
+            data.put("expiresIn", jwtUtil.getExpireHours() * 3600); // 过期时间（秒）
+
             // 用户信息
             Map<String, Object> userInfo = new HashMap<>();
             userInfo.put("id", user.getId());

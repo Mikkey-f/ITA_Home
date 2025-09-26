@@ -150,7 +150,73 @@
 
 ---
 
-### 3. 获取邮箱验证码
+### 3. 邮箱登录
+
+**接口描述:** 验证邮箱和密码，返回JWT令牌
+
+- **请求方式:** `POST`
+- **请求路径:** `/api/user/login/email`  
+- **是否需要认证:** 否
+
+**请求参数:**
+
+| 参数名 | 类型 | 必填 | 说明 | 示例 |
+|--------|------|------|------|------|
+| email | String | 是 | 邮箱地址 | "user@example.com" |
+| password | String | 是 | 密码 | "123456" |
+
+**请求示例:**
+```json
+{
+  "email": "user@example.com",
+  "password": "123456"
+}
+```
+
+**响应示例:**
+
+成功响应:
+```json
+{
+  "code": 1,
+  "msg": null,
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiJ9...",
+    "tokenType": "Bearer",
+    "expiresIn": 7200,
+    "user": {
+      "id": 1,
+      "name": "admin",
+      "avatar": 3,
+      "createTime": "2025-09-22T15:30:00"
+    }
+  }
+}
+```
+
+失败响应:
+```json
+{
+  "code": 0,
+  "msg": "邮箱或密码错误",
+  "data": null
+}
+```
+
+**响应字段说明:**
+- `token`: JWT访问令牌
+- `tokenType`: 令牌类型，固定为"Bearer"
+- `expiresIn`: 令牌过期时间(秒)
+- `user`: 用户基本信息
+
+**错误码说明:**
+- 邮箱或密码错误
+- 用户名和密码不能为空
+- 系统异常，请联系管理员
+
+---
+
+### 4. 获取邮箱验证码
 
 **接口描述:** 向指定邮箱发送验证码
 
@@ -204,7 +270,7 @@ PUT /api/user/activate?email=user@example.com
 Authorization: Bearer <JWT_TOKEN>
 ```
 
-### 4. 获取用户信息
+### 5. 获取用户信息
 
 **接口描述:** 根据用户ID获取用户详细信息
 
@@ -246,7 +312,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 
 ---
 
-### 5. 获取个人信息
+### 6. 获取个人信息
 
 **接口描述:** 获取当前登录用户的详细信息
 
@@ -301,7 +367,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 
 ---
 
-### 6. 修改用户头像
+### 7. 修改用户头像
 
 **接口描述:** 修改当前登录用户的头像
 
@@ -332,7 +398,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 
 ---
 
-### 7. 修改密码
+### 8. 修改密码
 
 **接口描述:** 修改当前登录用户的密码
 
@@ -376,7 +442,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 
 ## 工具接口
 
-### 8. 检查用户名是否存在
+### 9. 检查用户名是否存在
 
 **接口描述:** 检查指定用户名是否已被注册
 
@@ -479,6 +545,7 @@ http://localhost:8080/api
 |------|----------|----------|
 | v1.0 | 2025-09-23 | 初始版本，包含用户注册、登录、信息管理功能 |
 | v1.1 | 2025-09-25 | 获取个人信息接口新增OJ数据汇总字段(ojUserDataVo) |
+| v1.2 | 2025-09-25 | 新增邮箱登录接口(/api/user/login/email) |
 
 ---
 

@@ -1,5 +1,6 @@
 package com.ita.home.model.vo;
 
+import com.ita.home.model.dto.OjDataDto;
 import com.ita.home.model.dto.OjUserDataDto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -21,7 +22,7 @@ import java.util.List;
 public class OjUserDataVo {
 
     @Schema(description = "各个平台返回的信息")
-    private List<OjUserDataDto> ojUserDataDtoList;
+    private List<OjDataDto> ojDataDtoList;
 
     @Schema(description = "总ac数")
     private Integer totalAc;

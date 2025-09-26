@@ -32,6 +32,14 @@ public interface UserOjMapper extends BaseMapper<UserOj> {
      */
     @Update("UPDATE ita_home.user_oj SET total_ac_num = #{totalAcNum}, " +
             "total_commit_num = #{totalCommitNum}, " +
+            "luogu_ac_num = #{luoguAcNum}, " +
+            "luogu_submit_num = #{luoguSubmitNum}, " +
+            "leetcode_ac_num = #{leetcodeAcNum}, " +
+            "leetcode_submit_num = #{leetcodeSubmitNum}, " +
+            "nowcoder_ac_num = #{nowcoderAcNum}, " +
+            "nowcoder_submit_num = #{nowcoderSubmitNum}, " +
+            "codeforces_ac_num = #{codeforceAcNum}, " +
+            "codeforces_submit_num = #{codeforceSubmitNum}, " +
             "cache_time = #{cacheTime}, " +
             "last_access_time = #{lastAccessTime}, " +
             "update_time = #{updateTime} " +
@@ -39,6 +47,14 @@ public interface UserOjMapper extends BaseMapper<UserOj> {
     int updateCacheData(@Param("userId") Long userId,
                         @Param("totalAcNum") Integer totalAcNum,
                         @Param("totalCommitNum") Integer totalCommitNum,
+                        @Param("luoguAcNum") Integer luoguAcNum,
+                        @Param("luoguSubmitNum") Integer luoguSubmitNum,
+                        @Param("leetcodeAcNum") Integer leetcodeAcNum,
+                        @Param("leetcodeSubmitNum") Integer leetcodeSubmitNum,
+                        @Param("nowcoderAcNum") Integer nowcoderAcNum,
+                        @Param("nowcoderSubmitNum") Integer nowcoderSubmitNum,
+                        @Param("codeforceAcNum") Integer codeforceAcNum,
+                        @Param("codeforceSubmitNum") Integer codeforceSubmitNum,
                         @Param("cacheTime") LocalDateTime cacheTime,
                         @Param("lastAccessTime") LocalDateTime lastAccessTime,
                         @Param("updateTime") LocalDateTime updateTime);

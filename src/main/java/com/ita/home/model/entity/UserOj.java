@@ -33,6 +33,7 @@ public class UserOj {
     /** 洛谷平台用户名 */
     @Schema(description = "洛谷平台用户名", example = "luogu_user123")
     private String luoguUsername;
+
     
     /** LeetCode中国站用户名 */
     @Schema(description = "LeetCode中国站用户名", example = "leetcode_user123")
@@ -69,7 +70,39 @@ public class UserOj {
     /** 修改时间 */
     @Schema(description = "修改时间", example = "2025-09-24T15:30:00")
     private LocalDateTime updateTime;
-    
+
+    /** 洛谷平台AC数 */
+    @Schema(description = "洛谷平台AC数", example = "25")
+    private Integer luoguAcNum;
+
+    /** 洛谷平台提交数 */
+    @Schema(description = "洛谷平台提交数", example = "50")
+    private Integer luoguSubmitNum;
+
+    /** LeetCode中国站AC数 */
+    @Schema(description = "LeetCode中国站AC数", example = "30")
+    private Integer leetcodeAcNum;
+
+    /** LeetCode中国站提交数 */
+    @Schema(description = "LeetCode中国站提交数", example = "80")
+    private Integer leetcodeSubmitNum;
+
+    /** 牛客网AC数 */
+    @Schema(description = "牛客网AC数", example = "20")
+    private Integer nowcoderAcNum;
+
+    /** 牛客网提交数 */
+    @Schema(description = "牛客网提交数", example = "40")
+    private Integer nowcoderSubmitNum;
+
+    /** Codeforces平台AC数 */
+    @Schema(description = "Codeforces平台AC数", example = "25")
+    private Integer codeforceAcNum;
+
+    /** Codeforces平台提交数 */
+    @Schema(description = "Codeforces平台提交数", example = "60")
+    private Integer codeforceSubmitNum;
+
     /**
      * 便捷构造方法 - 创建用户OJ账号
      */

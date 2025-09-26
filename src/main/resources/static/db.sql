@@ -26,9 +26,17 @@ CREATE TABLE IF NOT EXISTS `user_oj`(
                                       `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
                                       `user_id` BIGINT NOT NULL COMMENT '用户ID，关联user表',
                                       `luogu_username` VARCHAR(50) NULL COMMENT '洛谷平台用户名',
+                                      `luogu_ac_num` INT DEFAULT 0 COMMENT '洛谷通过数',
+                                      `luogu_commit_num` INT DEFAULT 0 COMMENT '洛谷提交数',
                                       `leetcode_cn_username` VARCHAR(50) NULL COMMENT 'LeetCode中国站用户名',
+                                      `leetcode_cn_ac_num` INT DEFAULT 0 COMMENT '力扣通过数',
+                                      `leetcode_cn_commit_num` INT DEFAULT 0 COMMENT '力扣提交数',
                                       `nowcoder_user_id` VARCHAR(50) NULL COMMENT '牛客网用户ID',
+                                      `nowcoder_ac_num` INT DEFAULT 0 COMMENT '牛客通过数',
+                                      `nowcoder_commit_num` INT DEFAULT 0 COMMENT '牛客提交数',
                                       `codeforce_username` VARCHAR(50) NULL COMMENT 'Codeforces用户名',
+                                      `codeforce_ac_num` INT DEFAULT 0 COMMENT 'Codeforces通过数',
+                                      `codeforce_commit_num` INT DEFAULT 0 COMMENT 'Codeforces提交数',
                                       `total_ac_num` INT NULL COMMENT '四个平台ac数之和',
                                       `total_commit_num` INT NULL COMMENT '四个平台commit数之和',
                                       `last_access_time` DATETIME NULL COMMENT '最后访问时间',
@@ -39,3 +47,4 @@ CREATE TABLE IF NOT EXISTS `user_oj`(
                                       UNIQUE INDEX `uk_user_id` (`user_id`), -- 确保每个用户只有一条记录
                                       INDEX `idx_user_id` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户OJ平台账号表';
+
