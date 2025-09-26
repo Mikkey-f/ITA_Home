@@ -97,11 +97,11 @@ public class UserOj {
 
     /** Codeforces平台AC数 */
     @Schema(description = "Codeforces平台AC数", example = "25")
-    private Integer codeforceAcNum;
+    private Integer codeforcesAcNum;
 
     /** Codeforces平台提交数 */
     @Schema(description = "Codeforces平台提交数", example = "60")
-    private Integer codeforceSubmitNum;
+    private Integer codeforcesSubmitNum;
 
     /**
      * 便捷构造方法 - 创建用户OJ账号

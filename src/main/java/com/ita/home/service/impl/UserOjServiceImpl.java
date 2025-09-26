@@ -5,10 +5,12 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.ita.home.enums.OjPlatformEnum;
 import com.ita.home.exception.BaseException;
 import com.ita.home.mapper.UserOjMapper;
+import com.ita.home.mapper.UserPlatformRankingMapper;
 import com.ita.home.model.dto.OjDataDto;
 import com.ita.home.model.dto.OjUserDataDto;
 import com.ita.home.model.dto.UserRankingDto;
 import com.ita.home.model.entity.UserOj;
+import com.ita.home.model.entity.UserPlatformRanking;
 import com.ita.home.model.req.RankingRequest;
 import com.ita.home.model.vo.OjUserDataVo;
 import com.ita.home.model.vo.RankingPageVo;
@@ -16,8 +18,6 @@ import com.ita.home.model.vo.UserPlatformRankingVo;
 import com.ita.home.model.vo.UserRankingVo;
 import com.ita.home.service.UserOjService;
 import com.ita.home.service.impl.async.AsyncOjUpdateService;
-import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -484,8 +484,8 @@ public class UserOjServiceImpl implements UserOjService {
         if (userOj.getCodeforceUsername() != null && !userOj.getCodeforceUsername().trim().isEmpty()) {
             ojDataDtoList.add(OjDataDto.builder()
                     .name("codeforces")
-                    .solved(userOj.getCodeforceAcNum() != null ? userOj.getCodeforceAcNum() : 0)
-                    .submitted(userOj.getCodeforceSubmitNum() != null ? userOj.getCodeforceSubmitNum() : 0)
+                    .solved(userOj.getCodeforcesAcNum() != null ? userOj.getCodeforcesAcNum() : 0)
+                    .submitted(userOj.getCodeforcesSubmitNum() != null ? userOj.getCodeforcesSubmitNum() : 0)
                     .build());
         }
 
@@ -504,4 +504,11 @@ public class UserOjServiceImpl implements UserOjService {
         return hybridRankingService.getUserPlatformRanking(platformId, userId);
     }
 
+    /**
+     * 刷新user_platform_ranking表的具体表项
+     */
+    @Override
+    public UserPlatformRankingVo refreshPlatformRanking(String platformId, Long userId) {
+        return hybridRankingService.refreshPlatformRanking(platformId, userId);
+    }
 }

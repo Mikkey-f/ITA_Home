@@ -339,6 +339,85 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 - OJ账号不存在：用户未绑定任何OJ平台账号
 - 服务器内部错误：外部API调用失败或系统异常
 
+### 6. 刷新用户指定平台排名信息
+
+**接口描述:** 强制刷新用户在指定OJ平台的排名数据，更新预计算缓存表和内存缓存
+
+- **请求方式:** `GET`
+- **请求路径:** `/api/user-oj/refresh/platform-ranking/{platformId}`
+- **是否需要认证:** 是
+- **执行时间:** 通常需要2-5秒（包含排名重新计算）
+
+**路径参数:**
+
+| 参数名 | 类型 | 必填 | 约束 | 说明 | 示例 |
+|--------|------|------|------|------|------|
+| platformId | String | 是 | 枚举值 | 平台ID | "luogu" |
+
+**支持的平台ID:**
+- `leetcode`: LeetCode中国站
+- `luogu`: 洛谷
+- `codeforces`: Codeforces
+- `nowcoder`: 牛客网
+
+**请求示例:**
+```
+GET /api/user-oj/refresh/platform-ranking/luogu
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
+```
+
+**响应示例:**
+
+成功响应:
+```json
+{
+  "code": 1,
+  "msg": "操作成功",
+  "data": {
+    "platformId": "luogu",
+    "platformName": "洛谷",
+    "ranking": 23,
+    "acCount": 125,
+    "submitCount": 198,
+    "totalUsers": 1520,
+    "rankingPercentage": 1.51,
+    "username": "user123"
+  }
+}
+```
+
+失败响应:
+```json
+{
+  "code": 0,
+  "msg": "用户未配置洛谷账号",
+  "data": null
+}
+```
+
+**功能说明:**
+- 绕过所有缓存层(L1+L2)，强制重新计算该用户在指定平台的排名
+- 更新数据库预计算表(user_platform_ranking)中的排名数据
+- 清空相关Caffeine缓存，确保下次查询获取最新数据
+- 实时从user_oj表获取最新的AC数和提交数进行排名计算
+- 返回刷新后的最新排名信息
+
+**使用场景:**
+- 用户数据发生重大变化，需要立即更新排名
+- 排名显示异常，需要强制刷新
+- 开发调试时需要获取最新计算结果
+
+**性能提示:**
+- 该接口会触发实时排名计算，响应时间较长（2-5秒）
+- 建议前端显示加载状态，提升用户体验  
+- 不建议频繁调用，正常情况下使用普通查询接口即可
+
+**错误码说明:**
+- `不支持的OJ平台: {platformId}`: 传入的平台ID不在支持列表中
+- `用户OJ数据不存在`: 用户未创建OJ配置记录
+- `用户未配置{平台名}账号`: 用户未绑定该平台账号
+- `排名计算失败`: 系统排名计算过程中发生错误
+
 ---
 
 ## 缓存机制说明
@@ -435,6 +514,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
 | v2.0 | 2025-09-25 | 初始版本，包含OJ数据获取和排名功能 |
 | v2.1 | 2025-09-25 | 新增内存刷新接口(/api/user-oj/refresh) |
 | v2.2 | 2025-09-26 | 新增用户平台排名接口(/api/user-oj/platform-ranking/{platformId}) |
+| v2.3 | 2025-09-26 | 新增强制刷新平台排名接口(/api/user-oj/refresh/platform-ranking/{platformId}) |
 
 ---
 

@@ -6,8 +6,6 @@ import com.ita.home.mapper.UserOjMapper;
 import com.ita.home.mapper.UserPlatformRankingMapper;
 import com.ita.home.model.entity.UserOj;
 import com.ita.home.model.entity.UserPlatformRanking;
-import com.ita.home.model.req.RankingRequest;
-import com.ita.home.model.vo.RankingPageVo;
 import com.ita.home.model.vo.UserPlatformRankingVo;
 import com.ita.home.service.impl.async.AsyncRankingService;
 import lombok.AllArgsConstructor;
@@ -75,6 +73,17 @@ public class HybridRankingService {
         caffeineRankingCache.putRanking(platformId, userId, result);
 
         return result;
+    }
+
+    /**
+     * 刷新目标user_platform_ranking表的表项
+     */
+    public UserPlatformRankingVo refreshPlatformRanking(String platformId, Long userId) {
+        // L2缓存，L1缓存更新
+        UserPlatformRankingVo userPlatformRankingVo = calculateRankingRealTime(platformId, userId);
+        asyncRankingService.updateSingleUserRankingAsync(platformId, userId, userPlatformRankingVo);
+        caffeineRankingCache.putRanking(platformId, userId, userPlatformRankingVo);
+        return userPlatformRankingVo;
     }
 
     private UserPlatformRankingVo convertToVo(UserPlatformRanking dbRanking) {
@@ -172,8 +181,8 @@ public class HybridRankingService {
             );
             case CODEFORCES -> new HybridRankingService.PlatformData(
                     userOj.getCodeforceUsername(),
-                    userOj.getCodeforceAcNum() != null ? userOj.getCodeforceAcNum() : 0,
-                    userOj.getCodeforceSubmitNum() != null ? userOj.getCodeforceSubmitNum() : 0
+                    userOj.getCodeforcesAcNum() != null ? userOj.getCodeforcesAcNum() : 0,
+                    userOj.getCodeforcesSubmitNum() != null ? userOj.getCodeforcesSubmitNum() : 0
             );
             default -> throw new RuntimeException("未支持的平台类型");
         };

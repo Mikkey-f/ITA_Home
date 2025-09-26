@@ -74,4 +74,11 @@ public interface UserOjService {
      */
     UserPlatformRankingVo getUserPlatformRanking(String platformId, Long userId);
 
+    /**
+     * 根据UserOj表里面刷新指定平台的缓存表和缓存
+     * @param platformId 平台ID
+     * @param userId 用户ID
+     * @return 用户平台排名信息
+     */
+    UserPlatformRankingVo refreshPlatformRanking(String platformId, Long userId);
 }

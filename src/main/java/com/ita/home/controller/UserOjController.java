@@ -183,4 +183,26 @@ public class UserOjController {
         UserPlatformRankingVo ranking = userOjService.getUserPlatformRanking(platformId, currentUserId);
         return Result.success(ranking);
     }
+
+    /**
+     * 刷新指定的OJ平台的排名信息
+     */
+    @GetMapping("/refresh/platform-ranking/{platformId}")
+    @Operation(summary = "刷新暂存表和缓存的oj表项", description = "刷新暂存表和缓存的oj表项")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "获取成功"),
+            @ApiResponse(responseCode = "400", description = "请求参数错误"),
+            @ApiResponse(responseCode = "401", description = "未登录"),
+            @ApiResponse(responseCode = "404", description = "OJ账号不存在"),
+            @ApiResponse(responseCode = "500", description = "服务器内部错误")
+    })
+    @RequireAuth
+    public Result<UserPlatformRankingVo> refreshGetUserPlatformRanking(
+            @PathVariable @Schema(description = "平台ID", example = "luogu", allowableValues = {"leetcode", "luogu", "codeforces", "nowcoder"})
+            String platformId,
+            HttpServletRequest httpRequest) {
+        Long currentUserId = (Long) httpRequest.getAttribute("currentUserId");
+        UserPlatformRankingVo ranking = userOjService.refreshPlatformRanking(platformId, currentUserId);
+        return Result.success(ranking);
+    }
 }

@@ -1,8 +1,6 @@
 package com.ita.home.config.cache;
 
 import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.stats.CacheStats;
-import com.ita.home.model.vo.RankingPageVo;
 import com.ita.home.model.vo.UserPlatformRankingVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
