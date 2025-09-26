@@ -5,7 +5,7 @@ import com.ita.home.mapper.UserOjMapper;
 import com.ita.home.model.entity.UserOj;
 import com.ita.home.model.vo.OjUserDataVo;
 import com.ita.home.service.UserOjService;
-import com.ita.home.service.impl.AsyncOjUpdateService;
+import com.ita.home.service.impl.async.AsyncOjUpdateService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;

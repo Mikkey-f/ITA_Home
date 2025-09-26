@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.*;
@@ -67,6 +68,7 @@ public class ThreadPoolConfig {
 
     /**
      * 用于并行调用OJ平台API的线程池
+     * 也负责处理缓存和数据库更新的任务
      */
     @Bean(name = "ojApiExecutorService") // 指定Bean名称，便于注入时区分
     public ExecutorService ojApiExecutorService() {
@@ -88,5 +90,20 @@ public class ThreadPoolConfig {
                 },
                 new ThreadPoolExecutor.CallerRunsPolicy() // 拒绝策略：让提交任务的线程执行，避免任务丢失
         );
+    }
+
+    /**
+     * 用于异步处理排名的线程池
+     */
+    @Bean("rankingExecutorService")
+    public TaskExecutor rankingExecutorService() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(corePoolSize);
+        executor.setMaxPoolSize(maxPoolSize);
+        executor.setQueueCapacity(queueCapacity);
+        executor.setThreadNamePrefix("ranking-async-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.initialize();
+        return executor;
     }
 }

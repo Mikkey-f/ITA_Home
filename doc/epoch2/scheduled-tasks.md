@@ -492,7 +492,7 @@ public class FailedTaskRecovery {
 ```properties
 # logback-spring.xml 配置
 logging.level.com.ita.home.schedule=INFO
-logging.level.com.ita.home.service.impl.AsyncOjUpdateService=DEBUG
+logging.level.com.ita.home.service.impl.async.AsyncOjUpdateService=DEBUG
 logging.level.com.ita.home.mapper=DEBUG
 ```
 
@@ -675,7 +675,7 @@ ita:
 logging:
   level:
     com.ita.home.schedule: INFO
-    com.ita.home.service.impl.AsyncOjUpdateService: DEBUG
+    com.ita.home.service.impl.async.AsyncOjUpdateService: DEBUG
   file:
     name: logs/application.log
   pattern:

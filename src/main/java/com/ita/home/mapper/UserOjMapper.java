@@ -1,6 +1,7 @@
 package com.ita.home.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.ita.home.model.dto.PlatformUserDataDto;
 import com.ita.home.model.dto.UserRankingDto;
 import com.ita.home.model.entity.User;
 import com.ita.home.model.entity.UserOj;
@@ -182,4 +183,79 @@ public interface UserOjMapper extends BaseMapper<UserOj> {
             "    ELSE FALSE END")
     Integer getTotalUsersWithPlatformData(@Param("platformId") String platformId);
 
+    /**
+     * 获取洛谷平台用户数据并按排名规则排序
+     * 排名规则：AC数降序，AC数相同时提交数升序
+     */
+    @Select("SELECT " +
+            "    uo.user_id AS userId, " +
+            "    u.name AS realUsername, " +
+            "    uo.luogu_username AS username, " +
+            "    COALESCE(uo.luogu_ac_num, 0) AS acCount, " +
+            "    COALESCE(uo.luogu_submit_num, 0) AS submitCount, " +
+            "    uo.update_time AS updateTime " +
+            "FROM ita_home.user_oj uo " +
+            "INNER JOIN ita_home.user u ON uo.user_id = u.id " +
+            "WHERE uo.luogu_username IS NOT NULL " +
+            "  AND uo.luogu_username != '' " +
+            "  AND uo.luogu_ac_num IS NOT NULL " +
+            "ORDER BY uo.luogu_ac_num DESC, uo.luogu_submit_num ASC")
+    List<PlatformUserDataDto> getLuoguUsersOrdered();
+
+    /**
+     * 获取LeetCode中国站用户数据并按排名规则排序
+     * 排名规则：AC数降序，AC数相同时提交数升序
+     */
+    @Select("SELECT " +
+            "    uo.user_id AS userId, " +
+            "    u.name AS realUsername, " +
+            "    uo.leetcode_cn_username AS username, " +
+            "    COALESCE(uo.leetcode_ac_num, 0) AS acCount, " +
+            "    COALESCE(uo.leetcode_submit_num, 0) AS submitCount, " +
+            "    uo.update_time AS updateTime " +
+            "FROM ita_home.user_oj uo " +
+            "INNER JOIN ita_home.user u ON uo.user_id = u.id " +
+            "WHERE uo.leetcode_cn_username IS NOT NULL " +
+            "  AND uo.leetcode_cn_username != '' " +
+            "  AND uo.leetcode_ac_num IS NOT NULL " +
+            "ORDER BY uo.leetcode_ac_num DESC, uo.leetcode_submit_num ASC")
+    List<PlatformUserDataDto> getLeetcodeUsersOrdered();
+
+    /**
+     * 获取牛客网用户数据并按排名规则排序
+     * 排名规则：AC数降序，AC数相同时提交数升序
+     */
+    @Select("SELECT " +
+            "    uo.user_id AS userId, " +
+            "    u.name AS realUsername, " +
+            "    uo.nowcoder_user_id AS username, " +
+            "    COALESCE(uo.nowcoder_ac_num, 0) AS acCount, " +
+            "    COALESCE(uo.nowcoder_submit_num, 0) AS submitCount, " +
+            "    uo.update_time AS updateTime " +
+            "FROM ita_home.user_oj uo " +
+            "INNER JOIN ita_home.user u ON uo.user_id = u.id " +
+            "WHERE uo.nowcoder_user_id IS NOT NULL " +
+            "  AND uo.nowcoder_user_id != '' " +
+            "  AND uo.nowcoder_ac_num IS NOT NULL " +
+            "ORDER BY uo.nowcoder_ac_num DESC, uo.nowcoder_submit_num ")
+    List<PlatformUserDataDto> getNowcoderUsersOrdered();
+
+    /**
+     * 获取Codeforces用户数据并按排名规则排序
+     * 排名规则：AC数降序，AC数相同时提交数升序
+     */
+    @Select("SELECT " +
+            "    uo.user_id AS userId, " +
+            "    u.name AS realUsername, " +
+            "    uo.codeforce_username AS username, " +
+            "    COALESCE(uo.codeforces_ac_num, 0) AS acCount, " +
+            "    COALESCE(uo.codeforces_submit_num, 0) AS submitCount, " +
+            "    uo.update_time AS updateTime " +
+            "FROM ita_home.user_oj uo " +
+            "INNER JOIN ita_home.user u ON uo.user_id = u.id " +
+            "WHERE uo.codeforce_username IS NOT NULL " +
+            "  AND uo.codeforce_username != '' " +
+            "  AND uo.codeforces_ac_num IS NOT NULL " +
+            "ORDER BY uo.codeforces_ac_num DESC, uo.codeforces_submit_num ")
+    List<PlatformUserDataDto> getCodeforcesUsersOrdered();
 }

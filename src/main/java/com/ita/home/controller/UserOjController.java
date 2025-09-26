@@ -113,7 +113,7 @@ public class UserOjController {
     }
 
     /**
-     * 获取用户刷题排名
+     * 刷新内存中的oj信息
      */
     @PostMapping("/refresh")
     @Operation(summary = "直接刷新内存中的oj信息", description = "刷新oj信息")

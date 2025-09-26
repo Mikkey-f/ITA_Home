@@ -48,3 +48,26 @@ CREATE TABLE IF NOT EXISTS `user_oj`(
                                       INDEX `idx_user_id` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户OJ平台账号表';
 
+-- 排名缓存表
+CREATE TABLE user_platform_ranking (
+                                       id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
+                                       user_id BIGINT NOT NULL COMMENT '用户ID',
+                                       platform_id VARCHAR(20) NOT NULL COMMENT '平台ID',
+                                       platform_name VARCHAR(50) NOT NULL COMMENT '平台名称',
+                                       username VARCHAR(100) NOT NULL COMMENT '平台用户名',
+                                       ranking INTEGER NOT NULL COMMENT '排名',
+                                       ac_count INTEGER NOT NULL COMMENT 'AC数量',
+                                       submit_count INTEGER NOT NULL COMMENT '提交数量',
+                                       total_users INTEGER NOT NULL COMMENT '该平台总用户数',
+                                       ranking_percentage DECIMAL(5,2) NOT NULL COMMENT '排名百分比',
+                                       last_calc_time DATETIME NOT NULL COMMENT '上次计算时间',
+                                       create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                       update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+
+    -- 索引设计
+                                       UNIQUE KEY uk_user_platform (user_id, platform_id) COMMENT '用户-平台唯一索引',
+                                       INDEX idx_platform_ranking (platform_id, ranking) COMMENT '平台排名索引',
+                                       INDEX idx_user_id (user_id) COMMENT '用户ID索引',
+                                       INDEX idx_calc_time (last_calc_time) COMMENT '计算时间索引'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户平台排名缓存表';
+

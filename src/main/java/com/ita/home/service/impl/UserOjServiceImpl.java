@@ -15,6 +15,7 @@ import com.ita.home.model.vo.RankingPageVo;
 import com.ita.home.model.vo.UserPlatformRankingVo;
 import com.ita.home.model.vo.UserRankingVo;
 import com.ita.home.service.UserOjService;
+import com.ita.home.service.impl.async.AsyncOjUpdateService;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -48,6 +49,7 @@ public class UserOjServiceImpl implements UserOjService {
     private final RestTemplate restTemplate;
     private final Cache<String, OjUserDataVo> ojDataCache;
     private final AsyncOjUpdateService asyncOjUpdateService;
+    private final HybridRankingService hybridRankingService;
     @Value("${ita.oj.cache.expire-hours}")
     private Integer expireHours;
 
@@ -56,12 +58,14 @@ public class UserOjServiceImpl implements UserOjService {
                              UserOjMapper userOjMapper,
                              RestTemplate restTemplate,
                              @Qualifier("ojDataCache") Cache<String, OjUserDataVo> ojDataCache,
-                             AsyncOjUpdateService asyncOjUpdateService) {
+                             AsyncOjUpdateService asyncOjUpdateService,
+                             HybridRankingService hybridRankingService) {
         this.executorService = executorService;
         this.userOjMapper = userOjMapper;
         this.restTemplate = restTemplate;
         this.ojDataCache = ojDataCache;
         this.asyncOjUpdateService = asyncOjUpdateService;
+        this.hybridRankingService = hybridRankingService;
     }
 
     /** OJHunt API的基础URL */
@@ -491,83 +495,13 @@ public class UserOjServiceImpl implements UserOjService {
                 .totalSubmit(userOj.getTotalCommitNum())
                 .build();
     }
-    // Service实现
-    @Override
-    public UserPlatformRankingVo getUserPlatformRanking(String platformId, Long userId) {
-        // 1. 验证平台ID
-        OjPlatformEnum platform = OjPlatformEnum.getByPlatformId(platformId);
-        if (platform == null) {
-            throw new RuntimeException("不支持的OJ平台: " + platformId);
-        }
-
-        // 2. 获取用户在该平台的数据
-        UserOj userOj = userOjMapper.findByUserId(userId);
-        if (userOj == null) {
-            throw new RuntimeException("用户OJ数据不存在");
-        }
-
-        // 3. 提取用户在指定平台的数据
-        PlatformData userPlatformData = extractUserPlatformData(userOj, platform);
-        if (userPlatformData.getUsername() == null || userPlatformData.getUsername().trim().isEmpty()) {
-            throw new RuntimeException("用户未配置" + platform.getPlatformName() + "账号");
-        }
-
-        // 4. 计算排名
-        Integer ranking = userOjMapper.calculateUserRanking(platform.getPlatformId(),
-                userPlatformData.getAcCount(), userPlatformData.getSubmitCount());
-
-        // 5. 获取总用户数
-        Integer totalUsers = userOjMapper.getTotalUsersWithPlatformData(platform.getPlatformId());
-
-        // 6. 计算排名百分比
-        double rankingPercentage = totalUsers > 0 ? (double) ranking / totalUsers * 100 : 0.0;
-
-        return UserPlatformRankingVo.builder()
-                .platformId(platform.getPlatformId())
-                .platformName(platform.getPlatformName())
-                .ranking(ranking)
-                .acCount(userPlatformData.getAcCount())
-                .submitCount(userPlatformData.getSubmitCount())
-                .totalUsers(totalUsers)
-                .rankingPercentage(Math.round(rankingPercentage * 100.0) / 100.0) // 保留2位小数
-                .username(userPlatformData.getUsername())
-                .build();
-    }
 
     /**
-     * 提取用户在指定平台的数据
+     * 通过缓存逻辑获得单个oj的排名
      */
-    private PlatformData extractUserPlatformData(UserOj userOj, OjPlatformEnum platform) {
-        return switch (platform) {
-            case LUOGU -> new PlatformData(
-                    userOj.getLuoguUsername(),
-                    userOj.getLuoguAcNum() != null ? userOj.getLuoguAcNum() : 0,
-                    userOj.getLuoguSubmitNum() != null ? userOj.getLuoguSubmitNum() : 0
-            );
-            case LEETCODE_CN -> new PlatformData(
-                    userOj.getLeetcodeCnUsername(),
-                    userOj.getLeetcodeAcNum() != null ? userOj.getLeetcodeAcNum() : 0,
-                    userOj.getLeetcodeSubmitNum() != null ? userOj.getLeetcodeSubmitNum() : 0
-            );
-            case NOWCODER -> new PlatformData(
-                    userOj.getNowcoderUserId(),
-                    userOj.getNowcoderAcNum() != null ? userOj.getNowcoderAcNum() : 0,
-                    userOj.getNowcoderSubmitNum() != null ? userOj.getNowcoderSubmitNum() : 0
-            );
-            case CODEFORCES -> new PlatformData(
-                    userOj.getCodeforceUsername(),
-                    userOj.getCodeforceAcNum() != null ? userOj.getCodeforceAcNum() : 0,
-                    userOj.getCodeforceSubmitNum() != null ? userOj.getCodeforceSubmitNum() : 0
-            );
-            default -> throw new RuntimeException("未支持的平台类型");
-        };
+    @Override
+    public UserPlatformRankingVo getUserPlatformRanking(String platformId, Long userId) {
+        return hybridRankingService.getUserPlatformRanking(platformId, userId);
     }
-    // 内部数据类
-    @Data
-    @AllArgsConstructor
-    private static class PlatformData {
-        private String username;
-        private Integer acCount;
-        private Integer submitCount;
-    }
+
 }
