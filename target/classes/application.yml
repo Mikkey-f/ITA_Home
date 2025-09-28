@@ -28,7 +28,6 @@ spring:
             enable: ${ita.mail.properties.mail.smtp.ssl.enable}
 
 
-
 # MyBatis Plus 配置
 mybatis-plus:
   # 实体类包路径
@@ -79,4 +78,14 @@ thread-pool:
     max-pool-size: ${ita.thread-pool.oj-api.max-pool-size}
     queue-capacity: ${ita.thread-pool.oj-api.queue-capacity}
     keep-alive-seconds: ${ita.thread-pool.oj-api.keep-alive-seconds}
+
+file:
+  upload:
+    base-path: "src/main/resources/uploads"
+    max-size: 10485760  # 10MB
+    allowed-types:
+      - "md"
+      - "pdf"
+    create-date-folder: false
+
 
