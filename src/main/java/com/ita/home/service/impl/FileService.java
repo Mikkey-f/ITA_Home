@@ -7,11 +7,14 @@ import com.ita.home.model.vo.FileUploadVo;
 import com.ita.home.utils.FileUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -125,6 +128,87 @@ public class FileService {
         } catch (Exception e) {
             log.error("获取文件信息失败: {}/{}", category, fileName, e);
             return null;
+        }
+    }
+
+    /**
+     * 读取文件内容（文本文件）
+     * 思路：将文件读取为字符串返回
+     */
+    public String getFileContent(String category, String fileName) {
+        // 1. 验证文件安全性
+        validateFileAccess(category, fileName);
+
+        FileCategoryEnum fileCategory = FileCategoryEnum.fromDisplayName(category);
+        // 2. 构建文件路径
+        String filePath = buildFilePath(fileCategory, fileName);
+
+        // 3. 读取文件内容
+        try {
+            Path path = Paths.get(filePath);
+            if (!Files.exists(path)) {
+                throw new RuntimeException("文件不存在");
+            }
+
+            // 使用UTF-8编码读取，确保中文正常显示
+            return Files.readString(path, StandardCharsets.UTF_8);
+
+        } catch (IOException e) {
+            log.error("读取文件失败: {}", filePath, e);
+            throw new RuntimeException("文件读取失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取文件资源（二进制文件）
+     * 思路：返回Resource对象，Spring自动处理流传输
+     */
+    public Resource getFileResource(String category, String fileName) {
+        // 1. 验证文件安全性
+        validateFileAccess(category, fileName);
+
+        FileCategoryEnum fileCategory = FileCategoryEnum.fromDisplayName(category);
+        // 2. 构建文件路径
+        String filePath = buildFilePath(fileCategory, fileName);
+
+        try {
+            Path path = Paths.get(filePath);
+            Resource resource = new UrlResource(path.toUri());
+
+            if (!resource.exists() || !resource.isReadable()) {
+                throw new RuntimeException("文件不存在或不可读");
+            }
+
+            return resource;
+
+        } catch (Exception e) {
+            log.error("获取文件资源失败: {}", filePath, e);
+            throw new RuntimeException("文件资源获取失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 验证文件访问权限
+     * 思路：确保文件路径安全，防止路径遍历攻击
+     */
+    private void validateFileAccess(String category, String fileName) {
+        // 1. 验证分类是否合法
+        FileCategoryEnum.fromDisplayName(category);
+
+        // 2. 验证文件名安全性
+        if (!FileUtil.isSecureFileName(fileName)) {
+            throw new RuntimeException("文件名不安全");
+        }
+        FileCategoryEnum fileCategory = FileCategoryEnum.fromDisplayName(category);
+
+        // 3. 确保文件在允许的目录内
+        String basePath = fileConfig.getBasePath();
+        String fullPath = buildFilePath(fileCategory, fileName);
+        Path normalizedPath = Paths.get(fullPath).normalize();
+        Path basePart = Paths.get(basePath).normalize();
+
+        if (!normalizedPath.startsWith(basePart)) {
+            throw new RuntimeException("文件路径不合法");
         }
     }
 

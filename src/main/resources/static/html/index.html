@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件预览系统</title>
+
+    <!-- 引入必要的库 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.0.0/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.0.0/lib/core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.0.0/dist/axios.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.0.0/styles/github.min.css">
+
+    <!-- 添加基础样式 -->
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .file-list {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .preview-container {
+            flex: 2;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .file-list ul {
+            list-style: none;
+            padding: 0;
+        }
+        .file-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+        .error {
+            color: #dc3545;
+            text-align: center;
+            padding: 20px;
+        }
+        .file-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #e1e5e9;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .markdown-content {
+            line-height: 1.6;
+            color: #333;
+        }
+        .markdown-content h1, .markdown-content h2 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 10px;
+        }
+        .markdown-content pre {
+            background: #f6f8fa;
+            padding: 16px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+        .markdown-content blockquote {
+            border-left: 4px solid #dfe2e5;
+            padding-left: 16px;
+            color: #6a737d;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- 文件列表 -->
+    <div class="file-list">
+        <h2>📁 文件列表</h2>
+        <div id="fileListContainer">
+            <div class="loading">正在加载文件列表...</div>
+        </div>
+    </div>
+
+    <!-- 预览容器 -->
+    <div class="preview-container">
+        <h2>👀 文件预览</h2>
+        <div id="previewContainer">
+            <div class="loading">请从左侧选择要预览的文件</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 🔧 配置后端服务地址 - 指向8080端口
+    const API_BASE_URL = 'http://localhost:8080';
+
+    // 文件预览类定义
+    class FilePreview {
+        constructor(containerSelector) {
+            this.container = document.querySelector(containerSelector);
+        }
+
+        async previewFile(category, fileName) {
+            try {
+                this.showLoading();
+                const extension = this.getFileExtension(fileName);
+
+                switch (extension) {
+                    case 'md':
+                        await this.previewMarkdown(category, fileName);
+                        break;
+                    case 'pdf':
+                        await this.previewPdf(category, fileName);
+                        break;
+                    default:
+                        this.showError('不支持预览的文件类型');
+                }
+            } catch (error) {
+                console.error('预览失败:', error);
+                this.showError('预览失败: ' + error.message);
+            }
+        }
+
+        async previewMarkdown(category, fileName) {
+            try {
+                const response = await axios.get(`${API_BASE_URL}/api/files/preview`, {
+                    params: { category, fileName }
+                });
+
+                // 🔧 适配Result格式：检查响应状态和获取数据
+                if (response.data.code === 1) {
+                    const markdownContent = response.data.data; // Result的data字段
+                    const htmlContent = marked.parse(markdownContent);
+
+                    this.container.innerHTML = `
+                            <div class="markdown-preview">
+                                <div class="file-header">
+                                    <h3>📄 ${fileName}</h3>
+                                    <button onclick="downloadFile('${category}', '${fileName}')">💾 下载文件</button>
+                                </div>
+                                <div class="markdown-content">${htmlContent}</div>
+                            </div>
+                        `;
+                } else {
+                    throw new Error(response.data.msg || '预览失败');
+                }
+            } catch (error) {
+                throw new Error('Markdown预览失败: ' + error.message);
+            }
+        }
+
+        async previewPdf(category, fileName) {
+            const pdfUrl = `${API_BASE_URL}/api/files/preview?category=${encodeURIComponent(category)}&fileName=${encodeURIComponent(fileName)}`;
+
+            this.container.innerHTML = `
+                    <div class="pdf-preview">
+                        <div class="file-header">
+                            <h3>📄 ${fileName}</h3>
+                            <div>
+                                <button onclick="downloadFile('${category}', '${fileName}')">💾 下载文件</button>
+                                <button onclick="window.open('${pdfUrl}', '_blank')">🔗 新标签页打开</button>
+                            </div>
+                        </div>
+                        <iframe src="${pdfUrl}" style="width: 100%; height: 600px; border: 1px solid #ddd; border-radius: 8px;" frameborder="0">
+                            您的浏览器不支持PDF预览，请<a href="${pdfUrl}" target="_blank">点击这里下载</a>
+                        </iframe>
+                    </div>
+                `;
+        }
+
+        getFileExtension(fileName) {
+            return fileName.split('.').pop().toLowerCase();
+        }
+
+        showLoading() {
+            this.container.innerHTML = '<div class="loading">📄 正在加载预览...</div>';
+        }
+
+        showError(message) {
+            this.container.innerHTML = `<div class="error">❌ ${message}</div>`;
+        }
+    }
+
+    // 初始化预览组件
+    const filePreview = new FilePreview('#previewContainer');
+
+    // 🔧 修复：加载文件列表 - 适配Result响应格式
+    async function loadFileList() {
+        try {
+            console.log('正在获取文件列表...');
+            const response = await axios.get(`${API_BASE_URL}/api/files/list`);
+
+            console.log('服务器响应:', response.data);
+
+            // 🔧 检查Result格式的响应
+            if (response.data.code === 1) {
+                const fileListData = response.data.data; // Result的data字段
+                const fileMap = fileListData.fileMap;
+
+                if (!fileMap || Object.keys(fileMap).length === 0) {
+                    document.getElementById('fileListContainer').innerHTML =
+                        '<div class="loading">📁 暂无文件，请先上传一些文件</div>';
+                    return;
+                }
+
+                let html = '';
+                for (const [category, files] of Object.entries(fileMap)) {
+                    html += `<h3>📂 ${category} (${files.length}个文件)</h3><ul>`;
+                    if (files.length === 0) {
+                        html += '<li style="color: #999;">暂无文件</li>';
+                    } else {
+                        files.forEach(filePath => {
+                            const fileName = filePath.split('/')[1];
+                            html += `
+                                    <li>
+                                        <span>📄 ${fileName}</span>
+                                        <div>
+                                            <button onclick="previewFile('${category}', '${fileName}')">👀 预览</button>
+                                            <button onclick="downloadFile('${category}', '${fileName}')">💾 下载</button>
+                                        </div>
+                                    </li>
+                                `;
+                        });
+                    }
+                    html += '</ul>';
+                }
+
+                document.getElementById('fileListContainer').innerHTML = html;
+                console.log('文件列表加载成功');
+
+            } else {
+                throw new Error(response.data.msg || '获取文件列表失败');
+            }
+
+        } catch (error) {
+            console.error('加载文件列表失败:', error);
+            let errorMessage = '❌ 加载文件列表失败';
+
+            if (error.response) {
+                // 服务器返回了错误响应
+                errorMessage += `<br>状态码: ${error.response.status}`;
+                if (error.response.data && error.response.data.msg) {
+                    errorMessage += `<br>错误信息: ${error.response.data.msg}`;
+                }
+            } else if (error.request) {
+                // 请求发出但没有收到响应
+                errorMessage += '<br>网络连接失败，请检查后端服务是否在8080端口运行';
+            } else {
+                // 其他错误
+                errorMessage += '<br>' + error.message;
+            }
+
+            document.getElementById('fileListContainer').innerHTML =
+                `<div class="error">${errorMessage}</div>`;
+        }
+    }
+
+    // 预览文件
+    function previewFile(category, fileName) {
+        console.log(`预览文件: ${category}/${fileName}`);
+        filePreview.previewFile(category, fileName);
+    }
+
+    // 下载文件
+    function downloadFile(category, fileName) {
+        console.log(`下载文件: ${category}/${fileName}`);
+        // 注意：下载接口可能需要单独实现
+        window.open(`${API_BASE_URL}/api/files/download?category=${category}&fileName=${fileName}`);
+    }
+
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('页面加载完成，开始初始化...');
+        loadFileList();
+    });
+</script>
+</body>
+</html>
