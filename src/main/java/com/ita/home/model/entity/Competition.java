@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
  * 竞赛实体类
  * 对应数据库中的competition表
  */
-@TableName("user")
+@TableName("competition")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

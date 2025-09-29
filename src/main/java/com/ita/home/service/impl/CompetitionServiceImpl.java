@@ -12,6 +12,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.UUID;
 
 @Service
@@ -87,27 +90,40 @@ public class CompetitionServiceImpl implements CompetitionService {
 
     @Override
     public String savePicture(MultipartFile picture) {
-        // 生成唯一文件名，避免文件名冲突
-        String originalFilename = picture.getOriginalFilename();
-        String fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
-        String newFilename = UUID.randomUUID().toString() + fileExtension;
-        // 定义图片存储路径
-        String uploadDir = "static/images/competitions/";
-        File uploadPath = new File(uploadDir);
-        // 创建目录（如果不存在）
-        if (!uploadPath.exists()) {
-            uploadPath.mkdirs();
-        }
         try {
-            // 保存文件
-            File destFile = new File(uploadDir + newFilename);
-            picture.transferTo(destFile);
+            // 定义图片存储路径 - 使用与成员服务相同的目录结构
+            String uploadDir = "static/competitions/";
+            File uploadPath = new File(uploadDir);
+
+            // 创建目录（如果不存在）
+            if (!uploadPath.exists()) {
+                boolean created = uploadPath.mkdirs();
+                if (!created) {
+                    log.error("创建目录失败: {}", uploadDir);
+                    return null;
+                }
+            }
+
+            // 生成唯一文件名
+            String originalFilename = picture.getOriginalFilename();
+            String fileExtension = "";
+            if (originalFilename != null && originalFilename.contains(".")) {
+                fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            }
+            String uniqueFilename = UUID.randomUUID().toString() + fileExtension;
+
+            // 保存文件到静态资源目录
+            Path filePath = Paths.get(uploadDir, uniqueFilename);
+            Files.write(filePath, picture.getBytes());
+
+            // 返回可访问的路径 - 与WebConfig中的映射匹配
+            return "/competitions/" + uniqueFilename;
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            log.error("保存图片失败", e);
+            return null;
         }
-        // 返回相对路径供前端访问
-        return "/images/competitions/" + newFilename;
     }
+
 
     @Override
     public boolean isValidPictureType(String contentType) {

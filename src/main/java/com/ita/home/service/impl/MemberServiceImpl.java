@@ -32,11 +32,11 @@ public class MemberServiceImpl implements MemberService {
     );
 
     // 从配置文件读取图片保存目录
-    @Value("${member.picture.save-dir:static/members/}")
+    @Value("${member.picture.save-dir:static/}")
     private String pictureSaveDir;
 
     // 从配置文件读取图片访问路径前缀
-    @Value("${member.picture.access-path:/static/members/}")
+    @Value("${member.picture.access-path:/static/}")
     private String pictureAccessPath;
 
     @Override
@@ -57,6 +57,12 @@ public class MemberServiceImpl implements MemberService {
     @Override
     public boolean updateMember(Long id, String name, String content, String picturePath) {
         try {
+            // 查询原有成员信息
+            Member existingMember = memberMapper.selectById(id);
+            if (existingMember == null) {
+                throw new BaseException("成员不存在");
+            }
+
             Member member = new Member();
             member.setId(id);
 
@@ -69,6 +75,8 @@ public class MemberServiceImpl implements MemberService {
             }
             if (picturePath != null) {
                 member.setPicture(picturePath);
+                // 如果传入了新图片，删除原有的图片文件
+                deleteOldPicture(existingMember.getPicture());
             }
 
             int result = memberMapper.updateById(member);
@@ -133,4 +141,28 @@ public class MemberServiceImpl implements MemberService {
             return null;
         }
     }
+
+    /**
+     * 删除旧的图片文件
+     * @param oldPicturePath 旧图片路径
+     */
+    private void deleteOldPicture(String oldPicturePath) {
+        if (oldPicturePath != null && !oldPicturePath.isEmpty()) {
+            try {
+                // 从访问路径转换为实际文件路径
+                // 假设访问路径格式为 /members/xxx.jpg，需要转换为实际的文件路径
+                String fileName = oldPicturePath.substring(oldPicturePath.lastIndexOf("/") + 1);
+                Path oldFilePath = Paths.get(pictureSaveDir, fileName);
+
+                File oldFile = oldFilePath.toFile();
+                if (oldFile.exists()) {
+                    oldFile.delete();
+                    log.info("成功删除旧图片文件: {}", oldFilePath);
+                }
+            } catch (Exception e) {
+                throw new BaseException("删除图片失败");
+            }
+        }
+    }
+
 }

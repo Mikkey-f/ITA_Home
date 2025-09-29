@@ -33,10 +33,9 @@ public class CompetitionController {
             @ApiResponse(responseCode = "400", description = "参数错误")
     })
     @PostMapping("/add")
-    public Result<String> addCompetition(@RequestBody CompetitionSaveRequest  request) {
-        String title = request.getTitle();
-        String content = request.getContent();
-        MultipartFile picture = request.getPicture();
+    public Result<String> addCompetition(@RequestParam String title,
+                                         @RequestParam String content,
+                                         @RequestParam MultipartFile picture) {
 
         // 参数校验
         ThrowUtils.throwIf(title == null || title.length() < 4 || title.length() > 20, "标题长度必须在4到20个字符之间");
@@ -44,7 +43,7 @@ public class CompetitionController {
         ThrowUtils.throwIf(picture == null, "请上传有效的图片文件(jpg/jpeg/png/gif)");
 
         // 验证图片类型是否有效
-        ThrowUtils.throwIf(!competitionService.isValidPictureType(picture.getContentType()), "请上传有效的图片文件(jpg/jpeg/png/gif)");
+        //ThrowUtils.throwIf(!competitionService.isValidPictureType(picture.getContentType()), "请上传有效的图片文件(jpg/jpeg/png/gif)");
 
         // 保存图片并获取访问路径
         String picturePath = competitionService.savePicture(picture);
@@ -66,11 +65,10 @@ public class CompetitionController {
             @ApiResponse(responseCode = "400", description = "参数错误")
     })
     @PostMapping("/update")
-    public Result<String> updateCompetition(@RequestBody CompetitionSaveRequest  request) {
-        Long id = request.getId();
-        String title = request.getTitle();
-        String content = request.getContent();
-        MultipartFile picture = request.getPicture();
+    public Result<String> updateCompetition(@RequestParam Long  id,
+                                            @RequestParam String content,
+                                            @RequestParam MultipartFile picture,
+                                            @RequestParam String title) {
         //参数校验
         ThrowUtils.throwIf(id == null || id < 0, "请选择要更新的竞赛信息");
         if (title != null){
@@ -79,9 +77,9 @@ public class CompetitionController {
         if (content != null){
             ThrowUtils.throwIf(content.length() < 6 || content.length() > 200, "内容长度必须在6到200个字符之间");
         }
-        if (picture != null){
-            ThrowUtils.throwIf(!competitionService.isValidPictureType(picture.getContentType()), "请上传有效的图片文件(jpg/jpeg/png/gif)");
-        }
+//        if (picture != null){
+//            ThrowUtils.throwIf(!competitionService.isValidPictureType(picture.getContentType()), "请上传有效的图片文件(jpg/jpeg/png/gif)");
+//        }
 
         boolean result = competitionService.updateCompetition(id, title, content, picture);
         ThrowUtils.throwIf(!result, "更新竞赛信息失败");
@@ -89,7 +87,7 @@ public class CompetitionController {
     }
 
     /**
-     * 获取竞赛信息
+     * 根据id获取竞赛信息
      * POST /api/competition/get
      */
     @Operation(summary = "获取竞赛信息", description = "获取竞赛的信息")
@@ -104,7 +102,7 @@ public class CompetitionController {
     }
 
     /**
-     * 删除竞赛信息
+     * 根据id删除竞赛信息
      * POST /api/competition/delete
      */
     @Operation(summary = "删除竞赛信息", description = "删除竞赛的信息")

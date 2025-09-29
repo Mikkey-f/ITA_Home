@@ -33,18 +33,17 @@ public class MemberController {
             @ApiResponse(responseCode = "400", description = "参数错误")
     })
     @PostMapping("/add")
-    public Result<String> addMember(@RequestBody MemberSaveRequest request) {
-        String name = request.getName();
-        String content = request.getContent();
-        MultipartFile picture = request.getPicture();
+    public Result<String> addMember( @RequestParam("name") String name,
+                                     @RequestParam("content") String content,
+                                     @RequestParam("picture") MultipartFile picture) {
 
         // 参数校验
         ThrowUtils.throwIf(name == null || name.length() < 2 || name.length() > 20, "姓名长度必须在2到20个字符之间");
         ThrowUtils.throwIf(content == null || content.length() < 6 || content.length() > 200, "个人简介长度必须在6到200个字符之间");
         ThrowUtils.throwIf(picture == null, "请上传有效的图片文件(jpg/jpeg/png/gif)");
 
-        // 验证图片类型是否有效
-        ThrowUtils.throwIf(!memberService.isValidPictureType(picture.getContentType()), "请上传有效的图片文件(jpg/jpeg/png/gif)");
+//        // 验证图片类型是否有效
+//        ThrowUtils.throwIf(!memberService.isValidPictureType(picture.getContentType()), "请上传有效的图片文件(jpg/jpeg/png/gif)");
 
         // 保存图片并获取访问路径
         String picturePath = memberService.savePicture(picture);
@@ -66,11 +65,10 @@ public class MemberController {
             @ApiResponse(responseCode = "400", description = "参数错误")
     })
     @PostMapping("/update")
-    public Result<String> updateMember(@RequestBody MemberSaveRequest request) {
-        Long id = request.getId();
-        String name = request.getName();
-        String content = request.getContent();
-        MultipartFile picture = request.getPicture();
+    public Result<String> updateMember(@RequestParam("id") Long id,
+                                       @RequestParam("name") String name,
+                                       @RequestParam("content") String content,
+                                       @RequestParam("picture") MultipartFile picture) {
 
         // 参数校验
         ThrowUtils.throwIf(id == null || id < 0, "请选择要更新的成员信息");
@@ -83,9 +81,9 @@ public class MemberController {
             ThrowUtils.throwIf(content.length() < 6 || content.length() > 200, "个人简介长度必须在6到200个字符之间");
         }
 
-        if (picture != null) {
-            ThrowUtils.throwIf(!memberService.isValidPictureType(picture.getContentType()), "请上传有效的图片文件(jpg/jpeg/png/gif)");
-        }
+//        if (picture != null) {
+//            ThrowUtils.throwIf(!memberService.isValidPictureType(picture.getContentType()), "请上传有效的图片文件(jpg/jpeg/png/gif)");
+//        }
 
         // 保存图片并获取访问路径（仅在提供了新图片时）
         String picturePath = null;
